@@ -322,12 +322,10 @@ function seed(){
   const mk=(nome,series,reps,peso,obs="")=>({id:uid(),nome,series,repsAlvo:reps,pesoRef:peso,obs,restSecs:null});
   return {
     treinos:[
-      {id:uid(), nome:"Peito + Tríceps", letra:"A", exercicios:[
+      {id:uid(), nome:"Peito", letra:"A", exercicios:[
         mk("Supino Halter 30°",3,8,18), mk("Voador Pack Deck",3,8,17.5),
         mk("Supino Máquina",3,8,30), mk("Supino Inclinado Halter",3,8,12),
-        mk("Pull Over",3,8,12),
-        mk("Tríceps Testa Polia/Barra W",3,8,15), mk("Tríceps Polia Barra V",3,10,15,"RPE-9/10"),
-        mk("Tríceps Francês Polia",3,6,15), mk("Tríceps Máquina",3,9,27.5,"RIR+1")
+        mk("Pull Over",3,8,12)
       ]},
       {id:uid(), nome:"Costas + Bíceps", letra:"B", exercicios:[
         mk("Puxador c/ Triângulo",3,9,40), mk("Remada Máquina",3,9,57.2),
@@ -344,10 +342,12 @@ function seed(){
         mk("Leg Press Vertical",3,8,100), mk("Leg Press 90°",3,8,160,"RPE-9"),
         mk("Mesa Flexora",3,8,41), mk("Panturrilha",3,6,80,"RIR+1")
       ]},
-      {id:uid(), nome:"Ombro", letra:"E", exercicios:[
+      {id:uid(), nome:"Ombro + Tríceps", letra:"E", exercicios:[
         mk("Desenvolvimento Máquina",3,6,20), mk("Elevação Lateral Polia",3,6,3.7),
         mk("Face Pull",3,8,12), mk("Remada Alta Barra",3,6,30,"RIR-1"),
-        mk("Encolhimento Trapézio",3,8,12)
+        mk("Encolhimento Trapézio",3,8,12),
+        mk("Tríceps Testa Polia/Barra W",3,8,15), mk("Tríceps Polia Barra V",3,10,15,"RPE-9/10"),
+        mk("Tríceps Francês Polia",3,6,15), mk("Tríceps Máquina",3,9,27.5,"RIR+1")
       ]}
     ],
     historico:{},
@@ -395,7 +395,7 @@ function openTreino(id){
   current=db.treinos.find(t=>t.id===id); if(!current) return;
   liveSession={};
   current.exercicios.forEach(ex=>{
-    liveSession[ex.id]=Array.from({length:ex.series},()=>({peso:"",reps:"",feito:false}));
+    liveSession[ex.id]=buildSets(ex);
   });
   $("#viewHome").classList.add("hidden");
   $("#viewTreino").classList.remove("hidden");
@@ -446,6 +446,23 @@ function renderHome(){
 function lastSession(exId){
   const h=db.historico[exId];
   return (h&&h.length)?h[h.length-1]:null;
+}
+function buildSets(ex){
+  // pré-preenche cada série: 1ª vez usa referência da planilha + reps alvo;
+  // depois usa peso/reps do que foi registrado da última vez.
+  const ls=lastSession(ex.id);
+  const rec=(ls&&ls.series.length)?ls.series:null;
+  return Array.from({length:ex.series},(_,i)=>{
+    let peso="", reps="";
+    if(rec){
+      const s=rec[i]||rec[rec.length-1];
+      peso=s.peso; reps=s.reps;
+    }else{
+      if(ex.pesoRef!=null&&ex.pesoRef!=="") peso=ex.pesoRef;
+      if(ex.repsAlvo!=null&&ex.repsAlvo!=="") reps=ex.repsAlvo;
+    }
+    return {peso,reps,feito:false};
+  });
 }
 function prevInfo(ex){
   const ls=lastSession(ex.id);
@@ -524,6 +541,7 @@ function renderTreino(){
     });
     html+=`</div>
       <div class="ex-actions">
+        <button class="btn btn-soft" onclick="removeSet('${ex.id}')">− Série</button>
         <button class="btn btn-soft" onclick="addSet('${ex.id}')">+ Série</button>
       </div>
     </div>`;
@@ -563,8 +581,15 @@ function toggleDone(exId,si,el){
   }
 }
 function addSet(exId){
-  liveSession[exId].push({peso:"",reps:"",feito:false});
+  const arr=liveSession[exId];
+  const prev=arr[arr.length-1]||{peso:"",reps:""};
+  arr.push({peso:prev.peso,reps:prev.reps,feito:false}); // nova série já com a mesma carga
   renderTreino();
+}
+function removeSet(exId){
+  const arr=liveSession[exId];
+  if(arr.length<=1){ toast("Precisa de ao menos 1 série"); return; }
+  arr.pop(); renderTreino(); updateProgress();
 }
 
 /* ---------- Concluir ---------- */
