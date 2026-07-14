@@ -494,7 +494,7 @@ function renderTreino(){
   let html=`<div class="prog-card">
     <div class="prog-info">
       <div class="prog-label">Progresso do treino</div>
-      <div class="prog-count">${done} <span style="color:var(--muted);font-size:14px">/ ${total} séries</span></div>
+      <div class="prog-count"><span id="progDone">${done}</span> <span style="color:var(--muted);font-size:14px">/ ${total} séries</span></div>
       <div class="prog-track"><div class="prog-fill" id="progFill" style="width:${pct}%"></div></div>
     </div>
     <div class="prog-ring">
@@ -553,10 +553,11 @@ function updateProgress(){
   const {total,done}=countSets();
   const pct=total?Math.round(done/total*100):0;
   const C=2*Math.PI*24;
-  const f=$("#progFill"), r=$("#progRing"), p=$("#progPct");
+  const f=$("#progFill"), r=$("#progRing"), p=$("#progPct"), d=$("#progDone");
   if(f)f.style.width=pct+"%";
   if(r)r.style.strokeDashoffset=C*(1-pct/100);
   if(p)p.textContent=pct+"%";
+  if(d)d.textContent=done;
 }
 
 /* ---------- Ações de série ---------- */
@@ -574,11 +575,7 @@ function toggleDone(exId,si,el){
   const all=liveSession[exId].every(x=>x.feito);
   if(card)card.classList.toggle("complete",all);
   updateProgress();
-  if(s.feito){
-    if(navigator.vibrate)navigator.vibrate(30);
-    const ex=current.exercicios.find(e=>e.id===exId);
-    startRest(exRest(ex), ex?ex.nome:"");
-  }
+  if(s.feito&&navigator.vibrate)navigator.vibrate(30); // só um toque de confirmação; descanso é manual (botão ⏱)
 }
 function addSet(exId){
   const arr=liveSession[exId];
