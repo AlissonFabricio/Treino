@@ -380,6 +380,38 @@ function escAttr(s){ return String(s).replace(/"/g,"&quot;"); }
 let current=null;
 let liveSession={};
 
+/* ---------- Sessão em andamento (sobrevive a recarregar/ficar em 2º plano) ---------- */
+const LIVEKEY="treinoApp.live.v1";
+function saveLive(){
+  if(!current){ return; }
+  try{ localStorage.setItem(LIVEKEY, JSON.stringify({treinoId:current.id, sets:liveSession, ts:Date.now()})); }catch(e){}
+}
+function clearLive(){ try{ localStorage.removeItem(LIVEKEY); }catch(e){} }
+function restoreLive(){
+  let L; try{ L=JSON.parse(localStorage.getItem(LIVEKEY)||"null"); }catch(e){ return false; }
+  if(!L||!L.treinoId||!L.sets){ return false; }
+  if(L.ts && (Date.now()-L.ts) > 12*3600*1000){ clearLive(); return false; } // esquece depois de 12h
+  const t=db.treinos.find(x=>x.id===L.treinoId);
+  if(!t){ clearLive(); return false; }
+  current=t;
+  liveSession={};
+  t.exercicios.forEach(ex=>{
+    const sv=L.sets[ex.id];
+    liveSession[ex.id]=(Array.isArray(sv)&&sv.length)
+      ? sv.map(s=>({peso:s.peso==null?"":s.peso, reps:s.reps==null?"":s.reps, feito:!!s.feito}))
+      : buildSets(ex);
+  });
+  $("#viewHome").classList.add("hidden");
+  $("#viewTreino").classList.remove("hidden");
+  $("#footbar").classList.remove("hidden");
+  $("#backBtn").style.display="flex";
+  $("#pageTitle").textContent=current.nome;
+  $("#pageSub").textContent="Treino "+letra(current);
+  window.scrollTo(0,0);
+  renderTreino();
+  return true;
+}
+
 function goHome(){
   current=null; liveSession={};
   $("#viewTreino").classList.add("hidden");
@@ -397,6 +429,7 @@ function openTreino(id){
   current.exercicios.forEach(ex=>{
     liveSession[ex.id]=buildSets(ex);
   });
+  saveLive();
   $("#viewHome").classList.add("hidden");
   $("#viewTreino").classList.remove("hidden");
   $("#footbar").classList.remove("hidden");
@@ -564,6 +597,7 @@ function updateProgress(){
 function setVal(exId,si,campo,val){
   const v=val===""?"":parseFloat(String(val).replace(",","."));
   liveSession[exId][si][campo]=(campo==="reps"&&v!=="")?Math.round(v):v;
+  saveLive();
 }
 function toggleDone(exId,si,el){
   const s=liveSession[exId][si];
@@ -575,18 +609,19 @@ function toggleDone(exId,si,el){
   const all=liveSession[exId].every(x=>x.feito);
   if(card)card.classList.toggle("complete",all);
   updateProgress();
+  saveLive();
   if(s.feito&&navigator.vibrate)navigator.vibrate(30); // só um toque de confirmação; descanso é manual (botão ⏱)
 }
 function addSet(exId){
   const arr=liveSession[exId];
   const prev=arr[arr.length-1]||{peso:"",reps:""};
   arr.push({peso:prev.peso,reps:prev.reps,feito:false}); // nova série já com a mesma carga
-  renderTreino();
+  saveLive(); renderTreino();
 }
 function removeSet(exId){
   const arr=liveSession[exId];
   if(arr.length<=1){ toast("Precisa de ao menos 1 série"); return; }
-  arr.pop(); renderTreino(); updateProgress();
+  arr.pop(); saveLive(); renderTreino(); updateProgress();
 }
 
 /* ---------- Concluir ---------- */
@@ -606,7 +641,7 @@ function finishTreino(){
     }
   });
   if(!algum){ toast("Nada registrado ainda"); return; }
-  save(); confetti(); toast("Treino salvo! 💪🔥");
+  save(); clearLive(); confetti(); toast("Treino salvo! 💪🔥");
   setTimeout(goHome,600);
 }
 function confetti(){
@@ -807,11 +842,15 @@ async function cloudPull(silent){
     const remote=JSON.parse(b64decode(j.content));
     const rU=remote.updatedAt||0, lU=db.updatedAt||0;
     if(rU>lU){
-      remote.config=remote.config||{};
-      remote.config.github=db.config.github;   // mantém credenciais deste aparelho
-      db=remote; persist();
-      if(current) goHome(); else renderHome();
-      if(!silent)toast("Baixado da nuvem ☁️↓");
+      if(current){ // treino em andamento: NÃO troca agora, senão perde o que está preenchendo
+        if(!silent)toast("Treino em andamento — sincroniza ao concluir");
+      }else{
+        remote.config=remote.config||{};
+        remote.config.github=db.config.github;   // mantém credenciais deste aparelho
+        db=remote; persist();
+        renderHome();
+        if(!silent)toast("Baixado da nuvem ☁️↓");
+      }
     }else if(lU>rU){
       await cloudPush(); if(!silent)toast("Enviado pra nuvem ☁️↑");
     }else{
@@ -933,12 +972,12 @@ function doSalvarExercicio(exId){
     current.exercicios.push(ex);
     liveSession[ex.id]=Array.from({length:series},()=>({peso:"",reps:"",feito:false}));
   }
-  save(); closeSheet(); renderTreino();
+  save(); saveLive(); closeSheet(); renderTreino();
 }
 function excluirExercicio(exId){
   current.exercicios=current.exercicios.filter(e=>e.id!==exId);
   delete liveSession[exId];
-  save(); closeSheet(); renderTreino(); toast("Exercício excluído");
+  save(); saveLive(); closeSheet(); renderTreino(); toast("Exercício excluído");
 }
 
 /* ---------- Eventos ---------- */
@@ -955,7 +994,7 @@ document.querySelectorAll("#restOverlay [data-rest]").forEach(b=>{
 });
 
 /* ---------- Start ---------- */
-goHome();
+if(!restoreLive()) goHome();   // se havia treino no meio, reabre com tudo que já estava preenchido
 if(ghConfigured()) cloudPull(true);
 </script>
 </body>
