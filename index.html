@@ -169,35 +169,38 @@
   .footbar .inner{max-width:640px; margin:0 auto; display:flex; gap:10px;}
   .btn-lg{flex:1; padding:17px; font-size:15.5px; border-radius:15px;}
 
-  /* ===== Rest timer overlay ===== */
-  #restOverlay{position:fixed; inset:0; z-index:45; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:6px;
-    background:rgba(8,10,14,.94); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-    opacity:0; pointer-events:none; transition:opacity .25s;}
-  #restOverlay.show{opacity:1; pointer-events:auto;}
-  .rest-label{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:2px; font-weight:800;}
-  .rest-ex{font-size:15px; color:var(--txt); font-weight:700; margin-top:2px; padding:0 30px; text-align:center;}
-  .ring-wrap{position:relative; width:240px; height:240px; margin:18px 0 8px;}
-  .ring-wrap svg{transform:rotate(-90deg); width:100%; height:100%;}
-  .ring-bg{fill:none; stroke:var(--card3); stroke-width:12;}
-  .ring-fg{fill:none; stroke:url(#ringGrad); stroke-width:12; stroke-linecap:round;
-    transition:stroke-dashoffset 1s linear;}
-  .ring-center{position:absolute; inset:0; display:flex; flex-direction:column;
-    align-items:center; justify-content:center;}
-  #restTime{font-size:56px; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:1px;}
-  .rest-total{font-size:12.5px; color:var(--muted); font-weight:600; margin-top:2px;}
-  .rest-adjust{display:flex; gap:12px; margin-top:10px;}
-  .radj{width:74px; padding:14px 0; border-radius:14px; background:var(--card2);
-    border:1px solid var(--line); font-weight:800; font-size:15px;}
-  .radj:active{background:var(--card3);}
-  .rest-presets{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; justify-content:center; padding:0 20px;}
-  .rpreset{padding:9px 15px; border-radius:99px; background:var(--card2); border:1px solid var(--line);
-    font-size:13px; font-weight:700; color:var(--muted);}
+  /* ===== Rest timer (barra compacta flutuante) ===== */
+  #restBar{position:fixed; left:10px; right:10px; bottom:96px; z-index:40;
+    max-width:620px; margin:0 auto;
+    background:linear-gradient(135deg,rgba(26,32,44,.98),rgba(17,21,30,.98));
+    border:1px solid var(--line); border-radius:16px;
+    box-shadow:0 16px 38px -12px rgba(0,0,0,.7);
+    padding:10px 12px 9px;
+    transform:translateY(16px); opacity:0; pointer-events:none; transition:.22s;}
+  #restBar.show{transform:translateY(0); opacity:1; pointer-events:auto;}
+  #restBar.done{border-color:var(--ok); box-shadow:0 16px 38px -12px rgba(47,213,113,.5);}
+  .rb-top{display:flex; align-items:center; gap:10px;}
+  .rb-info{display:flex; flex-direction:column; min-width:0; flex:1;}
+  .rb-label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1.5px; font-weight:800;}
+  .rb-ex{font-size:12.5px; color:var(--txt); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .rb-time{font-size:30px; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:.5px; padding:0 2px;}
+  #restBar.done .rb-time{color:var(--ok);}
+  .rb-actions{display:flex; gap:6px; align-items:center;}
+  .rb-adj{padding:9px 10px; border-radius:11px; background:var(--card2);
+    border:1px solid var(--line); font-weight:800; font-size:13px; color:var(--txt);}
+  .rb-adj:active{background:var(--card3);}
+  .rb-skip{width:38px; height:38px; border-radius:11px; background:var(--card2);
+    border:1px solid var(--line); font-size:15px; font-weight:800; color:var(--muted);}
+  .rb-skip:active{transform:scale(.94);}
+  .rb-track{height:5px; border-radius:99px; background:var(--card3); margin-top:9px; overflow:hidden;}
+  .rb-fill{height:100%; border-radius:99px; width:100%;
+    background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width .25s linear;}
+  #restBar.done .rb-fill{background:var(--ok);}
+  .rb-presets{display:flex; gap:6px; margin-top:9px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:1px;}
+  .rb-presets::-webkit-scrollbar{display:none;}
+  .rpreset{flex:0 0 auto; padding:7px 12px; border-radius:99px; background:var(--card2);
+    border:1px solid var(--line); font-size:12px; font-weight:700; color:var(--muted);}
   .rpreset.on{background:rgba(79,140,255,.15); border-color:var(--accent); color:var(--accent);}
-  #restSkip{margin-top:22px; padding:15px 44px; border-radius:15px; font-size:15px; font-weight:800;
-    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff;
-    box-shadow:0 10px 26px -8px rgba(79,140,255,.55);}
-  #restSkip:active{transform:scale(.96);}
 
   /* ===== Sheet / Modal ===== */
   .backdrop{position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.6); opacity:0;
@@ -272,30 +275,21 @@
 </div>
 
 <!-- Rest overlay -->
-<div id="restOverlay">
-  <div class="rest-label">Descanso</div>
-  <div class="rest-ex" id="restExName"></div>
-  <div class="ring-wrap">
-    <svg viewBox="0 0 240 240">
-      <defs>
-        <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#4f8cff"/><stop offset="100%" stop-color="#2fd571"/>
-        </linearGradient>
-      </defs>
-      <circle class="ring-bg" cx="120" cy="120" r="106"/>
-      <circle class="ring-fg" id="ringFg" cx="120" cy="120" r="106"/>
-    </svg>
-    <div class="ring-center">
-      <div id="restTime">1:30</div>
-      <div class="rest-total" id="restTotalLbl">de 1:30</div>
+<div id="restBar">
+  <div class="rb-top">
+    <div class="rb-info">
+      <span class="rb-label">Descanso</span>
+      <span class="rb-ex" id="restExName"></span>
+    </div>
+    <div class="rb-time" id="restTime">1:30</div>
+    <div class="rb-actions">
+      <button class="rb-adj" data-rest="-15">−15</button>
+      <button class="rb-adj" data-rest="15">+15</button>
+      <button class="rb-skip" id="restSkip" title="Encerrar descanso">✕</button>
     </div>
   </div>
-  <div class="rest-adjust">
-    <button class="radj" data-rest="-15">−15s</button>
-    <button class="radj" data-rest="15">+15s</button>
-  </div>
-  <div class="rest-presets" id="restPresets"></div>
-  <button id="restSkip">Pular descanso</button>
+  <div class="rb-track"><div class="rb-fill" id="restFill"></div></div>
+  <div class="rb-presets" id="restPresets"></div>
 </div>
 
 <div class="backdrop" id="backdrop"></div>
@@ -658,46 +652,64 @@ function confetti(){
   }
 }
 
-/* ---------- Cronômetro ---------- */
-let restT=null, restLeft=0, restTotal=0;
-const RING_C=2*Math.PI*106;
+/* ---------- Cronômetro (relógio real: continua em 2º plano e sobrevive a recarregar) ---------- */
+const REST_KEY="treinoApp.rest.v1";
+let restT=null, restLeft=0, restTotal=0, restEndsAt=0;
+function saveRestState(){
+  try{ localStorage.setItem(REST_KEY, JSON.stringify({endsAt:restEndsAt, total:restTotal, ex:$("#restExName").textContent||""})); }catch(e){}
+}
+function clearRestState(){ try{ localStorage.removeItem(REST_KEY); }catch(e){} }
+function restTick(){
+  restLeft=Math.max(0,Math.round((restEndsAt-Date.now())/1000));
+  updateRest();
+  if(restLeft<=0) endRest();
+}
 function startRest(secs,exName){
   restTotal=secs||db.config.descansoSegundos||90;
-  restLeft=restTotal;
+  restEndsAt=Date.now()+restTotal*1000;
   $("#restExName").textContent=exName||"";
-  $("#restTotalLbl").textContent="de "+fmtSecs(restTotal);
   renderPresets();
-  $("#restOverlay").classList.add("show");
-  const ring=$("#ringFg");
-  ring.style.strokeDasharray=RING_C;
-  updateRest();
-  clearInterval(restT);
-  restT=setInterval(()=>{
-    restLeft--; updateRest();
-    if(restLeft<=0) endRest();
-  },1000);
+  const bar=$("#restBar"); bar.classList.remove("done"); bar.classList.add("show");
+  saveRestState();
+  clearInterval(restT); restTick(); restT=setInterval(restTick,250);
 }
 function renderPresets(){
   $("#restPresets").innerHTML=PRESETS.map(p=>
     `<button class="rpreset${p===restTotal?" on":""}" onclick="setRestTotal(${p})">${fmtSecs(p)}</button>`).join("");
 }
 function setRestTotal(p){
-  restTotal=p; restLeft=p;
-  $("#restTotalLbl").textContent="de "+fmtSecs(restTotal);
-  renderPresets(); updateRest();
+  restTotal=p; restEndsAt=Date.now()+p*1000;
+  $("#restBar").classList.remove("done");
+  renderPresets(); saveRestState(); restTick();
 }
 function updateRest(){
   $("#restTime").textContent=fmtSecs(Math.max(0,restLeft));
-  const frac=restTotal?Math.max(0,restLeft/restTotal):0;
-  $("#ringFg").style.strokeDashoffset=RING_C*(1-frac);
+  const frac=restTotal?Math.max(0,Math.min(1,restLeft/restTotal)):0;
+  const fill=$("#restFill"); if(fill)fill.style.width=(frac*100)+"%";
 }
 function endRest(){
-  clearInterval(restT); restT=null;
+  clearInterval(restT); restT=null; clearRestState();
   beep(); if(navigator.vibrate)navigator.vibrate([220,90,220]);
   $("#restTime").textContent="0:00";
-  setTimeout(hideRest,900);
+  const fill=$("#restFill"); if(fill)fill.style.width="0%";
+  $("#restBar").classList.add("done");
+  setTimeout(hideRest,1400);
 }
-function hideRest(){ clearInterval(restT); restT=null; $("#restOverlay").classList.remove("show"); }
+function hideRest(){
+  clearInterval(restT); restT=null; clearRestState();
+  const b=$("#restBar"); if(b){ b.classList.remove("show"); b.classList.remove("done"); }
+}
+function restoreRest(){
+  let R; try{ R=JSON.parse(localStorage.getItem(REST_KEY)||"null"); }catch(e){ return; }
+  if(!R||!R.endsAt){ return; }
+  if(Math.round((R.endsAt-Date.now())/1000)<=0){ clearRestState(); return; } // já acabou enquanto estava fora
+  restTotal=R.total||db.config.descansoSegundos||90;
+  restEndsAt=R.endsAt;
+  $("#restExName").textContent=R.ex||"";
+  renderPresets();
+  const bar=$("#restBar"); bar.classList.remove("done"); bar.classList.add("show");
+  clearInterval(restT); restTick(); restT=setInterval(restTick,250);
+}
 function beep(){
   try{
     const ctx=new (window.AudioContext||window.webkitAudioContext)();
@@ -987,14 +999,22 @@ $("#finishBtn").onclick=finishTreino;
 $("#restNowBtn").onclick=()=>startRest(db.config.descansoSegundos,"");
 $("#restSkip").onclick=hideRest;
 $("#backdrop").onclick=closeSheet;
-document.querySelectorAll("#restOverlay [data-rest]").forEach(b=>{
-  b.onclick=()=>{ restLeft=Math.max(1,restLeft+parseInt(b.dataset.rest,10));
-    if(restLeft>restTotal){restTotal=restLeft; $("#restTotalLbl").textContent="de "+fmtSecs(restTotal); renderPresets();}
-    updateRest(); };
+document.querySelectorAll("#restBar [data-rest]").forEach(b=>{
+  b.onclick=()=>{
+    const d=parseInt(b.dataset.rest,10)*1000;
+    restEndsAt=Math.max(Date.now()+1000, restEndsAt+d);   // nunca deixa negativo
+    const left=Math.round((restEndsAt-Date.now())/1000);
+    if(left>restTotal){ restTotal=left; renderPresets(); }
+    $("#restBar").classList.remove("done");
+    saveRestState(); restTick();
+  };
 });
+// Ao voltar pro app (ou trocar de aba), recalcula na hora pelo relógio real
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && restT) restTick(); });
 
 /* ---------- Start ---------- */
 if(!restoreLive()) goHome();   // se havia treino no meio, reabre com tudo que já estava preenchido
+restoreRest();                 // se o descanso estava rodando, retoma contando pelo relógio real
 if(ghConfigured()) cloudPull(true);
 </script>
 </body>
