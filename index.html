@@ -77,6 +77,7 @@
   .pill{background:var(--card2); border:1px solid var(--line); border-radius:99px;
     padding:3px 9px; font-size:11.5px; font-weight:600; color:var(--muted); white-space:nowrap;}
   .pill.hl{color:var(--ok); border-color:rgba(47,213,113,.35);}
+  .pill.go{color:#ffcf5e; border-color:rgba(255,207,94,.45); background:rgba(255,207,94,.10);}
   .chev{color:var(--muted); font-size:24px; flex:0 0 auto;}
 
   /* ===== Progress header (treino) ===== */
@@ -374,27 +375,44 @@ function escAttr(s){ return String(s).replace(/"/g,"&quot;"); }
 let current=null;
 let liveSession={};
 
-/* ---------- Sessão em andamento (sobrevive a recarregar/ficar em 2º plano) ---------- */
+/* ---------- Sessões em andamento (várias ao mesmo tempo; sobrevivem a navegar/recarregar/2º plano) ---------- */
 const LIVEKEY="treinoApp.live.v1";
+let liveAll={};      // { [treinoId]: { sets:{[exId]:[{peso,reps,feito}]}, ts } }
+let liveLast=null;   // último treino que estava aberto
+function loadLiveAll(){
+  let L; try{ L=JSON.parse(localStorage.getItem(LIVEKEY)||"null"); }catch(e){ L=null; }
+  if(!L){ liveAll={}; liveLast=null; return; }
+  if(L.treinoId && L.sets){ liveAll={[L.treinoId]:{sets:L.sets, ts:L.ts||Date.now()}}; liveLast=L.treinoId; } // migra formato antigo (1 treino só)
+  else { liveAll=L.sessions||{}; liveLast=L.lastTreinoId||null; }
+  const agora=Date.now();
+  Object.keys(liveAll).forEach(id=>{ const s=liveAll[id]; if(!s||!s.sets||(s.ts&&agora-s.ts>12*3600*1000)) delete liveAll[id]; }); // esquece cada treino depois de 12h
+  if(liveLast && !liveAll[liveLast]) liveLast=null;
+}
+function persistLiveAll(){ try{ localStorage.setItem(LIVEKEY, JSON.stringify({sessions:liveAll, lastTreinoId:liveLast})); }catch(e){} }
 function saveLive(){
   if(!current){ return; }
-  try{ localStorage.setItem(LIVEKEY, JSON.stringify({treinoId:current.id, sets:liveSession, ts:Date.now()})); }catch(e){}
+  liveAll[current.id]={sets:liveSession, ts:Date.now()};
+  liveLast=current.id;
+  persistLiveAll();
 }
-function clearLive(){ try{ localStorage.removeItem(LIVEKEY); }catch(e){} }
-function restoreLive(){
-  let L; try{ L=JSON.parse(localStorage.getItem(LIVEKEY)||"null"); }catch(e){ return false; }
-  if(!L||!L.treinoId||!L.sets){ return false; }
-  if(L.ts && (Date.now()-L.ts) > 12*3600*1000){ clearLive(); return false; } // esquece depois de 12h
-  const t=db.treinos.find(x=>x.id===L.treinoId);
-  if(!t){ clearLive(); return false; }
-  current=t;
+function clearLive(){   // limpa só o treino atual (ao concluir)
+  if(current){ delete liveAll[current.id]; if(liveLast===current.id) liveLast=null; }
+  persistLiveAll();
+}
+function hydrateLive(t){   // monta liveSession do que já estava salvo desse treino, ou dos valores padrão
+  const saved = liveAll[t.id] && liveAll[t.id].sets;
   liveSession={};
   t.exercicios.forEach(ex=>{
-    const sv=L.sets[ex.id];
+    const sv = saved && saved[ex.id];
     liveSession[ex.id]=(Array.isArray(sv)&&sv.length)
       ? sv.map(s=>({peso:s.peso==null?"":s.peso, reps:s.reps==null?"":s.reps, feito:!!s.feito}))
       : buildSets(ex);
   });
+  liveAll[t.id]={sets:liveSession, ts:Date.now()};
+  liveLast=t.id;
+  persistLiveAll();
+}
+function showTreinoView(){
   $("#viewHome").classList.add("hidden");
   $("#viewTreino").classList.remove("hidden");
   $("#footbar").classList.remove("hidden");
@@ -403,11 +421,20 @@ function restoreLive(){
   $("#pageSub").textContent="Treino "+letra(current);
   window.scrollTo(0,0);
   renderTreino();
+}
+function restoreLive(){
+  loadLiveAll();
+  if(!liveLast) return false;
+  const t=db.treinos.find(x=>x.id===liveLast);
+  if(!t || !liveAll[liveLast]){ liveLast=null; persistLiveAll(); return false; }
+  current=t;
+  hydrateLive(t);
+  showTreinoView();
   return true;
 }
 
 function goHome(){
-  current=null; liveSession={};
+  current=null; liveSession={};   // mantém liveAll em memória — os treinos no meio continuam salvos
   $("#viewTreino").classList.add("hidden");
   $("#viewHome").classList.remove("hidden");
   $("#footbar").classList.add("hidden");
@@ -419,19 +446,8 @@ function goHome(){
 }
 function openTreino(id){
   current=db.treinos.find(t=>t.id===id); if(!current) return;
-  liveSession={};
-  current.exercicios.forEach(ex=>{
-    liveSession[ex.id]=buildSets(ex);
-  });
-  saveLive();
-  $("#viewHome").classList.add("hidden");
-  $("#viewTreino").classList.remove("hidden");
-  $("#footbar").classList.remove("hidden");
-  $("#backBtn").style.display="flex";
-  $("#pageTitle").textContent=current.nome;
-  $("#pageSub").textContent="Treino "+letra(current);
-  window.scrollTo(0,0);
-  renderTreino();
+  hydrateLive(current);   // se já havia progresso nesse treino, volta com tudo preenchido
+  showTreinoView();
 }
 
 /* ---------- Home ---------- */
@@ -442,6 +458,13 @@ function lastDateOf(t){
     if(h&&h.length){ const d=h[h.length-1].data; if(d) best=d; }
   });
   return best;
+}
+function liveDone(t){   // nº de séries já marcadas 'feito' na sessão em andamento desse treino (0 = sem progresso)
+  const s = liveAll[t.id] && liveAll[t.id].sets;
+  if(!s) return 0;
+  let n=0;
+  Object.keys(s).forEach(exId=>{ const arr=s[exId]; if(Array.isArray(arr)) arr.forEach(x=>{ if(x&&x.feito) n++; }); });
+  return n;
 }
 function renderHome(){
   const v=$("#viewHome");
@@ -454,12 +477,13 @@ function renderHome(){
     db.treinos.forEach((t,i)=>{
       const nEx=t.exercicios.length;
       const ld=lastDateOf(t);
+      const andamento=liveDone(t);
       html+=`<button class="treino-card" style="--grad:${grad(i)}" onclick="openTreino('${t.id}')">
         <div class="badge">${letra(t)}</div>
         <div class="info"><div class="nome">${esc(t.nome)}</div>
           <div class="meta">
             <span class="pill">${ICONS[i%ICONS.length]} ${nEx} exercícios</span>
-            ${ld?`<span class="pill hl">último: ${ld}</span>`:`<span class="pill">nunca feito</span>`}
+            ${andamento?`<span class="pill go">▶ em andamento · ${andamento} série${andamento>1?"s":""}</span>`:(ld?`<span class="pill hl">último: ${ld}</span>`:`<span class="pill">nunca feito</span>`)}
           </div></div>
         <div class="chev">›</div></button>`;
     });
@@ -1016,6 +1040,11 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden && restT)
 if(!restoreLive()) goHome();   // se havia treino no meio, reabre com tudo que já estava preenchido
 restoreRest();                 // se o descanso estava rodando, retoma contando pelo relógio real
 if(ghConfigured()) cloudPull(true);
+
+// Cache offline: abre na hora e funciona sem internet (atualiza sozinho em 2º plano)
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{ navigator.serviceWorker.register("./sw.js").catch(()=>{}); });
+}
 </script>
 </body>
 </html>
