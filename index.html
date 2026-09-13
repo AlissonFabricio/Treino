@@ -301,6 +301,12 @@
 "use strict";
 const KEY="treinoApp.v1";
 const uid=()=>Math.random().toString(36).slice(2,9);
+/* --- IDs estaveis por nome: o historico deixa de depender de id aleatorio --- */
+const SEED_VER=2;
+const BKKEY="treinoApp.backup.v1";
+const slugify=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+const sid=(...p)=>"x-"+p.map(slugify).join("-");
+let ID_MAP={};
 const PRESETS=[30,45,60,90,120,180];
 const GRADS=[
   "linear-gradient(135deg,#4f8cff,#3b6fe0)",
@@ -314,30 +320,30 @@ const ICONS=["🏋️","💪","🦵","🍑","🔥","⚡"];
 
 /* ---------- Seed (extraído da planilha) ---------- */
 function seed(){
-  const mk=(nome,series,reps,peso,obs="")=>({id:uid(),nome,series,repsAlvo:reps,pesoRef:peso,obs,restSecs:null});
+  const mk=(nome,series,reps,peso,obs="")=>({id:sid(nome),nome,series,repsAlvo:reps,pesoRef:peso,obs,restSecs:null});
   return {
     treinos:[
-      {id:uid(), nome:"Peito", letra:"A", exercicios:[
+      {id:sid("t","Peito"), nome:"Peito", letra:"A", exercicios:[
         mk("Supino Halter 30°",3,8,18), mk("Voador Pack Deck",3,8,17.5),
         mk("Supino Máquina",3,8,30), mk("Supino Inclinado Halter",3,8,12),
         mk("Pull Over",3,8,12)
       ]},
-      {id:uid(), nome:"Costas + Bíceps", letra:"B", exercicios:[
+      {id:sid("t","Costas + Bíceps"), nome:"Costas + Bíceps", letra:"B", exercicios:[
         mk("Puxador c/ Triângulo",3,9,40), mk("Remada Máquina",3,9,57.2),
         mk("Puxador Triângulo",3,7,40), mk("Pulldown Máquina",3,8,45),
         mk("Scott Barra",3,10,25,"RIR+1"), mk("Rosca Direta Barra W",3,8,20,"RIR-1"),
         mk("Rosca Alt. 45°",3,9,8,"RIR+1"), mk("Bíceps Máquina",3,9,17.5),
         mk("Bíceps Polia",3,9,17)
       ]},
-      {id:uid(), nome:"Quadríceps + Adutores", letra:"C", exercicios:[
+      {id:sid("t","Quadríceps + Adutores"), nome:"Quadríceps + Adutores", letra:"C", exercicios:[
         mk("Cadeira Flexora",3,8,42.5), mk("Cadeira Extensora",3,8,40),
         mk("Abdutor",3,8,65), mk("Adutor",3,8,55), mk("Stiff",3,10,10,"RPE-10")
       ]},
-      {id:uid(), nome:"Posterior + Glúteo", letra:"D", exercicios:[
+      {id:sid("t","Posterior + Glúteo"), nome:"Posterior + Glúteo", letra:"D", exercicios:[
         mk("Leg Press Vertical",3,8,100), mk("Leg Press 90°",3,8,160,"RPE-9"),
         mk("Mesa Flexora",3,8,41), mk("Panturrilha",3,6,80,"RIR+1")
       ]},
-      {id:uid(), nome:"Ombro + Tríceps", letra:"E", exercicios:[
+      {id:sid("t","Ombro + Tríceps"), nome:"Ombro + Tríceps", letra:"E", exercicios:[
         mk("Desenvolvimento Máquina",3,6,20), mk("Elevação Lateral Polia",3,6,3.7),
         mk("Face Pull",3,8,12), mk("Remada Alta Barra",3,6,30,"RIR-1"),
         mk("Encolhimento Trapézio",3,8,12),
@@ -347,6 +353,8 @@ function seed(){
     ],
     historico:{},
     config:{descansoSegundos:90, github:null},
+    removidos:[],
+    seedVer:SEED_VER,
     updatedAt:Date.now()
   };
 }
@@ -354,8 +362,66 @@ function seed(){
 /* ---------- Estado ---------- */
 let db=load();
 function load(){
-  try{ const raw=localStorage.getItem(KEY); if(raw){ const o=JSON.parse(raw); if(!o.updatedAt)o.updatedAt=Date.now(); if(!o.config)o.config={descansoSegundos:90}; return o; } }catch(e){}
+  try{ const raw=localStorage.getItem(KEY); if(raw){ const o=JSON.parse(raw); if(!o.updatedAt)o.updatedAt=Date.now();
+    const m=migrate(o); localStorage.setItem(KEY,JSON.stringify(m)); return m; } }catch(e){}
   const s=seed(); localStorage.setItem(KEY,JSON.stringify(s)); return s;
+}
+
+/* ---------- Protecao de dados: migracao, merge do seed e snapshot ---------- */
+function histCount(o){ let n=0; const h=(o&&o.historico)||{}; for(const k in h) n+=(h[k]||[]).length; return n; }
+function snapshot(motivo,obj){
+  try{ const src=obj||db; localStorage.setItem(BKKEY, JSON.stringify({ts:Date.now(), motivo:motivo||"", db:JSON.parse(JSON.stringify(src))})); }catch(e){}
+}
+function getSnapshot(){ try{ return JSON.parse(localStorage.getItem(BKKEY)||"null"); }catch(e){ return null; } }
+
+/* Troca ids aleatorios por ids derivados do NOME e leva o historico junto. */
+function remapIds(o){
+  ID_MAP={};
+  const used={}, take=base=>{ let id=base,i=2; while(used[id]){ id=base+"-"+(i++); } used[id]=1; return id; };
+  const hist=o.historico||{}, novo={};
+  (o.treinos||[]).forEach(t=>{
+    const tid=take(sid("t",t.nome));
+    if(tid!==t.id){ ID_MAP[t.id]=tid; t.id=tid; }
+    (t.exercicios||[]).forEach(ex=>{
+      const eid=take(sid(ex.nome));
+      if(eid!==ex.id) ID_MAP[ex.id]=eid;
+      const antigo=hist[ex.id]||[], ja=novo[eid]||[];
+      if(antigo.length||ja.length) novo[eid]=ja.concat(antigo).slice(-30);
+      ex.id=eid;
+    });
+  });
+  for(const k in hist){ if(!novo[k] && !ID_MAP[k]) novo[k]=hist[k]; }   /* nao joga fora historico orfao */
+  o.historico=novo;
+  if(Array.isArray(o.removidos)) o.removidos=o.removidos.map(id=>ID_MAP[id]||id);
+  return o;
+}
+
+/* Aplica mudancas de rotina SEM apagar nada: so adiciona o que e novo. */
+function mergeSeed(o){
+  if(o.seedVer===SEED_VER) return o;
+  const s=seed(), fora={}; (o.removidos||[]).forEach(id=>fora[id]=1);
+  o.treinos=o.treinos||[];
+  s.treinos.forEach(st=>{
+    const t=o.treinos.find(x=>x.id===st.id);
+    if(!t){ if(!fora[st.id]) o.treinos.push(st); return; }
+    t.exercicios=t.exercicios||[];
+    st.exercicios.forEach((se,i)=>{
+      if(fora[se.id]) return;
+      if(!t.exercicios.some(x=>x.id===se.id)) t.exercicios.splice(Math.min(i,t.exercicios.length),0,se);
+    });
+  });
+  o.seedVer=SEED_VER;
+  return o;
+}
+
+function migrate(o){
+  if(!o.historico) o.historico={};
+  if(!o.config) o.config={descansoSegundos:90};
+  if(!Array.isArray(o.removidos)) o.removidos=[];
+  if(o.seedVer!==SEED_VER) snapshot("atualiza\u00e7\u00e3o do app", o);   /* rede de seguranca antes de mexer */
+  remapIds(o);
+  mergeSeed(o);
+  return o;
 }
 function persist(){ localStorage.setItem(KEY,JSON.stringify(db)); }
 function save(){ db.updatedAt=Date.now(); persist(); scheduleCloudPush(); }
@@ -384,6 +450,16 @@ function loadLiveAll(){
   if(!L){ liveAll={}; liveLast=null; return; }
   if(L.treinoId && L.sets){ liveAll={[L.treinoId]:{sets:L.sets, ts:L.ts||Date.now()}}; liveLast=L.treinoId; } // migra formato antigo (1 treino só)
   else { liveAll=L.sessions||{}; liveLast=L.lastTreinoId||null; }
+  if(Object.keys(ID_MAP).length){   /* ids mudaram na migracao: leva a sessao em andamento junto */
+    const out={};
+    Object.keys(liveAll).forEach(tid=>{
+      const s=liveAll[tid]||{}, sets={};
+      Object.keys(s.sets||{}).forEach(eid=>{ sets[ID_MAP[eid]||eid]=s.sets[eid]; });
+      out[ID_MAP[tid]||tid]={sets, ts:s.ts};
+    });
+    liveAll=out;
+    if(liveLast) liveLast=ID_MAP[liveLast]||liveLast;
+  }
   const agora=Date.now();
   Object.keys(liveAll).forEach(id=>{ const s=liveAll[id]; if(!s||!s.sets||(s.ts&&agora-s.ts>12*3600*1000)) delete liveAll[id]; }); // esquece cada treino depois de 12h
   if(liveLast && !liveAll[liveLast]) liveLast=null;
@@ -770,6 +846,8 @@ function mainMenu(){
       <div>Nuvem (GitHub)<div class="mi-sub">${ghConfigured()?"conectado — sincroniza entre aparelhos":"guardar dados online, sincronizar"}</div></div></div>
     <div class="menu-item" onclick="closeSheet();exportBackup()"><span class="mi-ic">⬇️</span> Exportar backup (.json)</div>
     <div class="menu-item" onclick="closeSheet();importBackup()"><span class="mi-ic">⬆️</span> Importar backup</div>
+    ${getSnapshot()?`<div class="menu-item" onclick="closeSheet();desfazerSheet()"><span class="mi-ic">↩️</span>
+      <div>Desfazer última mudança grande<div class="mi-sub">${new Date(getSnapshot().ts).toLocaleString("pt-BR")} — ${esc(getSnapshot().motivo||"backup")}</div></div></div>`:""}
     ${inTreino?`<div class="menu-item" onclick="closeSheet();editarTreino('${current.id}')"><span class="mi-ic">✏️</span> Editar este treino</div>`:""}
     <div class="menu-item danger" onclick="closeSheet();resetTudo()"><span class="mi-ic">🗑</span> Restaurar rotina padrão</div>`);
 }
@@ -834,7 +912,8 @@ function importBackup(){
         const obj=JSON.parse(r.result);
         if(!obj.treinos) throw 0;
         const keepGh=gh();
-        db=obj; if(!db.historico)db.historico={}; if(!db.config)db.config={descansoSegundos:90};
+        snapshot("importar backup");
+        db=migrate(obj);
         db.config.github=keepGh;
         save(); goHome(); toast("Backup importado ✓");
       }catch(e){ toast("Arquivo inválido"); }
@@ -845,12 +924,36 @@ function importBackup(){
 }
 function resetTudo(){
   openSheet(`<h2>Restaurar rotina padrão?</h2>
-    <p>Isso apaga seus registros e volta à rotina inicial da planilha. Exporte um backup antes se quiser guardar.</p>
+    <p>Volta os treinos e exercícios à rotina original. <b>Seu histórico de cargas é mantido</b> — as progressões continuam lá.</p>
     <div class="ex-actions">
       <button class="btn btn-soft" onclick="closeSheet()">Cancelar</button>
-      <button class="btn btn-accent" style="background:var(--danger);box-shadow:none" onclick="doReset()">Apagar e restaurar</button></div>`);
+      <button class="btn btn-accent" onclick="doReset(false)">Restaurar rotina</button></div>
+    <div class="menu-item danger" style="margin-top:12px" onclick="doReset(true)"><span class="mi-ic">🗑</span>
+      <div>Apagar também o histórico<div class="mi-sub">zera tudo, inclusive as cargas registradas</div></div></div>`);
 }
-function doReset(){ const keep=gh(); db=seed(); db.config.github=keep; save(); closeSheet(); goHome(); toast("Rotina restaurada"); }
+function doReset(hard){
+  snapshot(hard?"apagar tudo":"restaurar rotina padrão");
+  const keep=gh(), hist=hard?{}:(db.historico||{});
+  db=seed(); db.config.github=keep; db.historico=hist;
+  save(); closeSheet(); goHome();
+  toast(hard?"Tudo apagado":"Rotina restaurada — histórico mantido ✓");
+}
+function desfazerSheet(){
+  const b=getSnapshot(); if(!b){ toast("Nada pra desfazer"); return; }
+  openSheet(`<h2>Desfazer?</h2>
+    <p>Volta os dados para como estavam em <b>${new Date(b.ts).toLocaleString("pt-BR")}</b><br>(antes de: ${esc(b.motivo||"—")}).<br>
+    Esse backup guarda <b>${histCount(b.db)}</b> séries de histórico.</p>
+    <div class="ex-actions">
+      <button class="btn btn-soft" onclick="closeSheet()">Cancelar</button>
+      <button class="btn btn-accent" onclick="doDesfazer()">Restaurar backup</button></div>`);
+}
+function doDesfazer(){
+  const b=getSnapshot(); if(!b) return;
+  const keep=gh();
+  snapshot("desfazer");
+  db=migrate(b.db); db.config=db.config||{descansoSegundos:90}; db.config.github=keep;
+  save(); closeSheet(); goHome(); toast("Dados restaurados ✓");
+}
 
 /* ---------- Nuvem (GitHub) ---------- */
 function gh(){ return (db.config&&db.config.github)||null; }
@@ -880,10 +983,15 @@ async function cloudPull(silent){
     if(rU>lU){
       if(current){ // treino em andamento: NÃO troca agora, senão perde o que está preenchendo
         if(!silent)toast("Treino em andamento — sincroniza ao concluir");
+      }else if(histCount(remote)===0 && histCount(db)>0){
+        // nuvem veio vazia mas este aparelho tem progresso: nao apaga, devolve o bom pra nuvem
+        db.updatedAt=Date.now(); persist(); await cloudPush();
+        if(!silent)toast("Nuvem estava sem histórico — restaurei deste aparelho ☁️↑");
       }else{
+        snapshot("baixar da nuvem");
         remote.config=remote.config||{};
         remote.config.github=db.config.github;   // mantém credenciais deste aparelho
-        db=remote; persist();
+        db=migrate(remote); persist();
         renderHome();
         if(!silent)toast("Baixado da nuvem ☁️↓");
       }
@@ -1012,6 +1120,7 @@ function doSalvarExercicio(exId){
 }
 function excluirExercicio(exId){
   current.exercicios=current.exercicios.filter(e=>e.id!==exId);
+  db.removidos=db.removidos||[]; if(db.removidos.indexOf(exId)<0) db.removidos.push(exId);
   delete liveSession[exId];
   save(); saveLive(); closeSheet(); renderTreino(); toast("Exercício excluído");
 }
