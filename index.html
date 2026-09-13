@@ -302,7 +302,7 @@
 const KEY="treinoApp.v1";
 const uid=()=>Math.random().toString(36).slice(2,9);
 /* --- IDs estaveis por nome: o historico deixa de depender de id aleatorio --- */
-const SEED_VER=2;
+const SEED_VER=3;
 const BKKEY="treinoApp.backup.v1";
 const slugify=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
 const sid=(...p)=>"x-"+p.map(slugify).join("-");
@@ -320,35 +320,39 @@ const ICONS=["🏋️","💪","🦵","🍑","🔥","⚡"];
 
 /* ---------- Seed (extraído da planilha) ---------- */
 function seed(){
-  const mk=(nome,series,reps,peso,obs="")=>({id:sid(nome),nome,series,repsAlvo:reps,pesoRef:peso,obs,restSecs:null});
+  const mk=(nome,series,reps,peso,obs="",rest=null)=>({id:sid(nome),nome,series,repsAlvo:reps,pesoRef:peso,obs,restSecs:rest});
   return {
     treinos:[
-      {id:sid("t","Peito"), nome:"Peito", letra:"A", exercicios:[
-        mk("Supino Halter 30°",3,8,18), mk("Voador Pack Deck",3,8,17.5),
-        mk("Supino Máquina",3,8,30), mk("Supino Inclinado Halter",3,8,12),
-        mk("Pull Over",3,8,12)
+      {id:sid("t","Tronco A"), nome:"Tronco A", letra:"A", exercicios:[
+        mk("Supino Halter 30°",3,8,18), mk("Remada Máquina",3,9,57.2),
+        mk("Supino Máquina",3,8,30), mk("Puxador c/ Triângulo",3,9,40),
+        mk("Voador Pack Deck",3,8,17.5), mk("Elevação Lateral Polia",3,6,3.7),
+        mk("Rosca Direta Barra W",3,8,20,"RIR-1"), mk("Tríceps Testa Polia/Barra W",3,8,15),
+        mk("Lenhador na Polia",3,15,15,"cada lado · 15-20 reps, sem tranco",45),
+        mk("Elevação de Pernas",3,12,0,"peso do corpo",45)
       ]},
-      {id:sid("t","Costas + Bíceps"), nome:"Costas + Bíceps", letra:"B", exercicios:[
-        mk("Puxador c/ Triângulo",3,9,40), mk("Remada Máquina",3,9,57.2),
-        mk("Puxador Triângulo",3,7,40), mk("Pulldown Máquina",3,8,45),
-        mk("Scott Barra",3,10,25,"RIR+1"), mk("Rosca Direta Barra W",3,8,20,"RIR-1"),
-        mk("Rosca Alt. 45°",3,9,8,"RIR+1"), mk("Bíceps Máquina",3,9,17.5),
-        mk("Bíceps Polia",3,9,17)
+      {id:sid("t","Perna A + Core"), nome:"Perna A + Core", letra:"B", exercicios:[
+        mk("Leg Press 90°",3,8,160,"RPE-9"), mk("Mesa Flexora",3,8,41),
+        mk("Cadeira Extensora",3,8,40), mk("Abdutor",3,8,65),
+        mk("Panturrilha",3,6,80,"RIR+1"), mk("Desenvolvimento Máquina",3,6,20),
+        mk("Rosca Alt. 45°",3,9,8,"RIR+1"), mk("Tríceps Polia Barra V",3,10,15,"RPE-9/10"),
+        mk("Prancha Lateral",3,40,0,"SEGUNDOS por lado",45),
+        mk("Abdominal na Polia",3,12,20,"ajoelhado · subir carga",45)
       ]},
-      {id:sid("t","Quadríceps + Adutores"), nome:"Quadríceps + Adutores", letra:"C", exercicios:[
-        mk("Cadeira Flexora",3,8,42.5), mk("Cadeira Extensora",3,8,40),
-        mk("Abdutor",3,8,65), mk("Adutor",3,8,55), mk("Stiff",3,10,10,"RPE-10")
+      {id:sid("t","Tronco B"), nome:"Tronco B", letra:"C", exercicios:[
+        mk("Paralelas (Mergulho)",3,8,0,"tronco inclinado à frente · peito inferior"),
+        mk("Pulldown Máquina",3,8,45), mk("Remada Curvada",3,8,30,"cotovelo aberto"),
+        mk("Pull Over",3,8,12), mk("Remada Alta Barra",3,6,30,"RIR-1"),
+        mk("Face Pull",3,8,12), mk("Crucifixo Inverso",3,15,5,"carga leve · execução > peso"),
+        mk("Scott Barra",3,10,25,"RIR+1"), mk("Tríceps Francês Polia",3,6,15)
       ]},
-      {id:sid("t","Posterior + Glúteo"), nome:"Posterior + Glúteo", letra:"D", exercicios:[
-        mk("Leg Press Vertical",3,8,100), mk("Leg Press 90°",3,8,160,"RPE-9"),
-        mk("Mesa Flexora",3,8,41), mk("Panturrilha",3,6,80,"RIR+1")
-      ]},
-      {id:sid("t","Ombro + Tríceps"), nome:"Ombro + Tríceps", letra:"E", exercicios:[
-        mk("Desenvolvimento Máquina",3,6,20), mk("Elevação Lateral Polia",3,6,3.7),
-        mk("Face Pull",3,8,12), mk("Remada Alta Barra",3,6,30,"RIR-1"),
-        mk("Encolhimento Trapézio",3,8,12),
-        mk("Tríceps Testa Polia/Barra W",3,8,15), mk("Tríceps Polia Barra V",3,10,15,"RPE-9/10"),
-        mk("Tríceps Francês Polia",3,6,15), mk("Tríceps Máquina",3,9,27.5,"RIR+1")
+      {id:sid("t","Perna B + Core"), nome:"Perna B + Core", letra:"D", exercicios:[
+        mk("Búlgaro",3,10,10,"cada perna · começar leve"), mk("Stiff",3,10,10,"RPE-10"),
+        mk("Cadeira Flexora",3,8,42.5), mk("Adutor",3,8,55),
+        mk("Panturrilha Sentado",3,12,40,"sóleo"), mk("Rosca Martelo",3,10,10),
+        mk("Tríceps Máquina",3,9,27.5,"RIR+1"),
+        mk("Pallof Press",3,12,15,"cada lado · não deixar o tronco girar",45),
+        mk("Protração Serrátil",3,15,10,"empurrar a escápula · polia ou flexão",45)
       ]}
     ],
     historico:{},
@@ -358,7 +362,6 @@ function seed(){
     updatedAt:Date.now()
   };
 }
-
 /* ---------- Estado ---------- */
 let db=load();
 function load(){
@@ -414,12 +417,35 @@ function mergeSeed(o){
   return o;
 }
 
+/* v3: troca a DIVISAO inteira pela nova, preservando historico e os ajustes do usuario.
+   O historico e indexado por id derivado do nome, entao exercicio que continua na rotina
+   mantem tudo; exercicio que saiu tem o historico guardado (orfao) e volta se readicionado. */
+function restructure(o){
+  const s=seed(), ant={};
+  (o.treinos||[]).forEach(t=>(t.exercicios||[]).forEach(ex=>{ ant[ex.id]=ex; }));
+  const fora={}; (o.removidos||[]).forEach(id=>fora[id]=1);
+  s.treinos.forEach(t=>{
+    t.exercicios=t.exercicios.filter(ex=>!fora[ex.id]).map(ex=>{
+      const a=ant[ex.id];
+      if(!a) return ex;
+      return {id:ex.id, nome:ex.nome,
+        series:(a.series!=null?a.series:ex.series),
+        repsAlvo:(a.repsAlvo!=null?a.repsAlvo:ex.repsAlvo),
+        pesoRef:(a.pesoRef!=null?a.pesoRef:ex.pesoRef),
+        obs:(a.obs||ex.obs), restSecs:(a.restSecs!=null?a.restSecs:ex.restSecs)};
+    });
+  });
+  o.treinos=s.treinos;
+  return o;
+}
+
 function migrate(o){
   if(!o.historico) o.historico={};
   if(!o.config) o.config={descansoSegundos:90};
   if(!Array.isArray(o.removidos)) o.removidos=[];
   if(o.seedVer!==SEED_VER) snapshot("atualiza\u00e7\u00e3o do app", o);   /* rede de seguranca antes de mexer */
   remapIds(o);
+  if((o.seedVer||0)<3) restructure(o);   /* v3: divisao 4 dias (2 tronco + 2 perna+core) */
   mergeSeed(o);
   return o;
 }
