@@ -303,6 +303,7 @@ const KEY="treinoApp.v1";
 const uid=()=>Math.random().toString(36).slice(2,9);
 /* --- IDs estaveis por nome: o historico deixa de depender de id aleatorio --- */
 const SEED_VER=3;
+const APP_VER="3.1 · 13/09/2026";   /* aparece no menu ⚙️ — serve pra saber qual versao esta rodando no aparelho */
 const BKKEY="treinoApp.backup.v1";
 const slugify=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
 const sid=(...p)=>"x-"+p.map(slugify).join("-");
@@ -875,7 +876,26 @@ function mainMenu(){
     ${getSnapshot()?`<div class="menu-item" onclick="closeSheet();desfazerSheet()"><span class="mi-ic">↩️</span>
       <div>Desfazer última mudança grande<div class="mi-sub">${new Date(getSnapshot().ts).toLocaleString("pt-BR")} — ${esc(getSnapshot().motivo||"backup")}</div></div></div>`:""}
     ${inTreino?`<div class="menu-item" onclick="closeSheet();editarTreino('${current.id}')"><span class="mi-ic">✏️</span> Editar este treino</div>`:""}
-    <div class="menu-item danger" onclick="closeSheet();resetTudo()"><span class="mi-ic">🗑</span> Restaurar rotina padrão</div>`);
+    <div class="menu-item" onclick="closeSheet();buscarAtualizacao()"><span class="mi-ic">🔄</span>
+      <div>Buscar atualização agora<div class="mi-sub">baixa a versão mais nova do app</div></div></div>
+    <div class="menu-item danger" onclick="closeSheet();resetTudo()"><span class="mi-ic">🗑</span> Restaurar rotina padrão</div>
+    <div class="mi-sub" style="text-align:center;margin-top:14px;opacity:.55">versão ${APP_VER}</div>`);
+}
+/* Forca o app a pegar a versao mais nova. Com sinal, limpa o cache offline e recarrega;
+   sem sinal, so pede update do Service Worker (nao apaga o cache, senao o app fica sem
+   nada pra abrir na academia). */
+async function buscarAtualizacao(){
+  toast("Procurando atualização…");
+  try{
+    if("serviceWorker" in navigator){
+      const rs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(rs.map(r=>r.update().catch(()=>{})));
+    }
+    if(navigator.onLine && window.caches){
+      const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k)));
+    }
+  }catch(e){}
+  setTimeout(()=>location.reload(), 800);
 }
 function chipsHtml(sel,id){
   return `<div class="chips" id="${id}">`+PRESETS.map(p=>
@@ -1176,9 +1196,19 @@ if(!restoreLive()) goHome();   // se havia treino no meio, reabre com tudo que j
 restoreRest();                 // se o descanso estava rodando, retoma contando pelo relógio real
 if(ghConfigured()) cloudPull(true);
 
-// Cache offline: abre na hora e funciona sem internet (atualiza sozinho em 2º plano)
+// Cache offline (sw.js = rede primeiro, cache como reserva). Quando um Service Worker
+// novo assume o controle, recarrega uma vez para a versao nova aparecer NA HORA —
+// menos no meio de um treino, pra nao atrapalhar quem esta registrando serie.
 if("serviceWorker" in navigator){
-  window.addEventListener("load",()=>{ navigator.serviceWorker.register("./sw.js").catch(()=>{}); });
+  const tinhaSW=!!navigator.serviceWorker.controller;
+  let jaRecarregou=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+    if(!tinhaSW||jaRecarregou||current) return;
+    jaRecarregou=true; location.reload();
+  });
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("./sw.js").then(r=>{ r.update().catch(()=>{}); }).catch(()=>{});
+  });
 }
 </script>
 </body>
