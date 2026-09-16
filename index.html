@@ -303,8 +303,9 @@ const KEY="treinoApp.v1";
 const uid=()=>Math.random().toString(36).slice(2,9);
 /* --- IDs estaveis por nome: o historico deixa de depender de id aleatorio --- */
 const SEED_VER=3;
-const APP_VER="3.1 · 13/09/2026";   /* aparece no menu ⚙️ — serve pra saber qual versao esta rodando no aparelho */
+const APP_VER="3.3 · 16/09/2026";   /* aparece no menu ⚙️ — serve pra saber qual versao esta rodando no aparelho */
 const BKKEY="treinoApp.backup.v1";
+const JRNKEY="treinoApp.journal.v1";   /* caderninho a parte: toda sessao concluida fica registrada aqui tambem */
 const slugify=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
 const sid=(...p)=>"x-"+p.map(slugify).join("-");
 let ID_MAP={};
@@ -360,15 +361,90 @@ function seed(){
     config:{descansoSegundos:90, github:null},
     removidos:[],
     seedVer:SEED_VER,
-    updatedAt:Date.now()
+    updatedAt:0   /* ZERO de proposito: rotina padrao nunca pode vencer a nuvem num sync */
   };
 }
 /* ---------- Estado ---------- */
 let db=load();
 function load(){
-  try{ const raw=localStorage.getItem(KEY); if(raw){ const o=JSON.parse(raw); if(!o.updatedAt)o.updatedAt=Date.now();
-    const m=migrate(o); localStorage.setItem(KEY,JSON.stringify(m)); return m; } }catch(e){}
-  const s=seed(); localStorage.setItem(KEY,JSON.stringify(s)); return s;
+  let raw=null;
+  try{ raw=localStorage.getItem(KEY); }catch(e){}
+  if(raw){
+    let o=null;
+    try{ o=JSON.parse(raw); }catch(e){ o=null; }
+    if(o && typeof o==="object" && o.treinos){
+      if(!o.updatedAt) o.updatedAt=1;          /* sem data conhecida: deixa a nuvem mandar, o historico se junta de qualquer jeito */
+      let m=o;
+      try{ m=migrate(o); }
+      catch(e){ m=o; if(!m.historico)m.historico={}; if(!m.config)m.config={descansoSegundos:90}; }   /* migracao quebrou? fica com o que ja tinha, NAO reseta */
+      try{ localStorage.setItem(KEY,JSON.stringify(m)); }catch(e){}
+      return m;
+    }
+    /* tem dado gravado mas ilegivel: guarda de lado em vez de apagar por cima */
+    try{ localStorage.setItem(KEY+".quarentena", raw); }catch(e){}
+  }
+  const s=seed();
+  try{ s.historico=mergeHist({}, journalHist()); }catch(e){}   /* comeco do zero reaproveita o caderninho, se houver */
+  try{ localStorage.setItem(KEY,JSON.stringify(s)); }catch(e){}
+  return s;
+}
+
+/* ---------- Caderninho: registro a parte de cada sessao concluida ----------
+   Vive numa chave so dele. Nada alem do "Concluir treino" escreve aqui, entao
+   mesmo que o banco principal se perca, as cargas registradas continuam existindo. */
+function journalAdd(entradas){
+  try{
+    let j=JSON.parse(localStorage.getItem(JRNKEY)||"[]");
+    if(!Array.isArray(j)) j=[];
+    entradas.forEach(e=>j.push(e));
+    while(j.length>400) j.shift();
+    localStorage.setItem(JRNKEY, JSON.stringify(j));
+  }catch(e){}
+}
+function journalHist(){
+  let j=[]; try{ j=JSON.parse(localStorage.getItem(JRNKEY)||"[]"); }catch(e){ j=[]; }
+  const h={};
+  (Array.isArray(j)?j:[]).forEach(e=>{
+    if(!e||!e.exId||!Array.isArray(e.series)) return;
+    (h[e.exId]=h[e.exId]||[]).push({data:e.data, ts:e.ts, series:e.series});
+  });
+  return h;
+}
+
+/* ---------- Uniao de historicos: junta os dois lados, nunca apaga ----------
+   Usado no sync e no resgate. Duas sessoes sao "a mesma" se tem a mesma data e
+   exatamente as mesmas series. */
+function histTs(s){
+  if(s && s.ts) return s.ts;
+  const m=/^(\d{1,2})\/(\d{1,2})$/.exec(String((s&&s.data)||""));
+  if(m){
+    const hoje=new Date();
+    let d=new Date(hoje.getFullYear(), (+m[2])-1, +m[1]);
+    if(d.getTime()-hoje.getTime() > 30*864e5) d=new Date(hoje.getFullYear()-1, (+m[2])-1, +m[1]);
+    return d.getTime();
+  }
+  return 0;
+}
+function histSig(s){
+  return String((s&&s.data)||"")+"|"+(((s&&s.series)||[]).map(x=>String(x.peso)+"x"+String(x.reps)).join(","));
+}
+function mergeHist(a,b){
+  const out={};
+  const add=h=>{
+    if(!h||typeof h!=="object") return;
+    for(const k in h){
+      const arr=h[k]; if(!Array.isArray(arr)) continue;
+      if(!out[k]) out[k]=[];
+      const vistos={}; out[k].forEach(x=>{ vistos[histSig(x)]=1; });
+      arr.forEach(x=>{ if(!x||!Array.isArray(x.series)) return; const g=histSig(x); if(!vistos[g]){ vistos[g]=1; out[k].push(x); } });
+    }
+  };
+  add(a); add(b);
+  for(const k in out){
+    out[k].sort((x,y)=>histTs(x)-histTs(y));
+    if(out[k].length>30) out[k]=out[k].slice(-30);
+  }
+  return out;
 }
 
 /* ---------- Protecao de dados: migracao, merge do seed e snapshot ---------- */
@@ -450,8 +526,11 @@ function migrate(o){
   mergeSeed(o);
   return o;
 }
-function persist(){ localStorage.setItem(KEY,JSON.stringify(db)); }
-function save(){ db.updatedAt=Date.now(); persist(); scheduleCloudPush(); }
+function persist(){
+  try{ localStorage.setItem(KEY,JSON.stringify(db)); return true; }
+  catch(e){ return false; }   /* sem espaco no aparelho: quem chamou decide o que avisar */
+}
+function save(){ db.updatedAt=Date.now(); const ok=persist(); scheduleCloudPush(); return ok; }
 
 /* ---------- Utils ---------- */
 const $=s=>document.querySelector(s);
@@ -686,10 +765,10 @@ function renderTreino(){
         <div class="set-n">${si+1}ª</div>
         <div class="fieldwrap"><label>Peso (kg)</label>
           <input type="number" inputmode="decimal" step="0.5" value="${s.peso}"
-            onchange="setVal('${ex.id}',${si},'peso',this.value)" placeholder="${prev.peso!==""?fmtNum(prev.peso):"0"}"></div>
+            oninput="setVal('${ex.id}',${si},'peso',this.value)" onchange="setVal('${ex.id}',${si},'peso',this.value)" placeholder="${prev.peso!==""?fmtNum(prev.peso):"0"}"></div>
         <div class="fieldwrap"><label>Reps</label>
           <input type="number" inputmode="numeric" value="${s.reps}"
-            onchange="setVal('${ex.id}',${si},'reps',this.value)" placeholder="${ex.repsAlvo}"></div>
+            oninput="setVal('${ex.id}',${si},'reps',this.value)" onchange="setVal('${ex.id}',${si},'reps',this.value)" placeholder="${ex.repsAlvo}"></div>
         <button class="check${s.feito?" done":""}" onclick="toggleDone('${ex.id}',${si},this)">✓</button>
       </div>`;
     });
@@ -747,22 +826,27 @@ function removeSet(exId){
 
 /* ---------- Concluir ---------- */
 function finishTreino(){
-  let algum=false;
+  const agora=new Date();
+  const dataStr=agora.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+  let algum=false; const jrn=[];
   current.exercicios.forEach(ex=>{
-    const sets=liveSession[ex.id];
+    const sets=liveSession[ex.id]||[];
     const pre=sets.filter(s=>s.peso!==""||s.reps!==""||s.feito);
     if(pre.length){
       algum=true;
+      const series=pre.map(s=>({peso:s.peso,reps:s.reps,feito:s.feito}));
       if(!db.historico[ex.id]) db.historico[ex.id]=[];
-      db.historico[ex.id].push({
-        data:new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}),
-        series:pre.map(s=>({peso:s.peso,reps:s.reps,feito:s.feito}))
-      });
+      db.historico[ex.id].push({data:dataStr, ts:agora.getTime(), series});
       if(db.historico[ex.id].length>30) db.historico[ex.id].shift();
+      jrn.push({exId:ex.id, nome:ex.nome, data:dataStr, ts:agora.getTime(), series});
     }
   });
   if(!algum){ toast("Nada registrado ainda"); return; }
-  save(); clearLive(); confetti(); toast("Treino salvo! 💪🔥");
+  journalAdd(jrn);            /* 1o no caderninho (chave propria), depois no banco */
+  const ok=save();
+  if(!ok){ toast("⚠️ Não consegui salvar — sem espaço no aparelho"); return; }   /* mantem a sessao aberta pra nao perder nada */
+  clearTimeout(cloudTimer); cloudTimer=null; cloudPush();   /* nuvem AGORA, sem esperar 1,5s (o app pode ser fechado antes) */
+  clearLive(); confetti(); toast("Treino salvo! 💪🔥");
   setTimeout(goHome,600);
 }
 function confetti(){
@@ -876,6 +960,8 @@ function mainMenu(){
     ${getSnapshot()?`<div class="menu-item" onclick="closeSheet();desfazerSheet()"><span class="mi-ic">↩️</span>
       <div>Desfazer última mudança grande<div class="mi-sub">${new Date(getSnapshot().ts).toLocaleString("pt-BR")} — ${esc(getSnapshot().motivo||"backup")}</div></div></div>`:""}
     ${inTreino?`<div class="menu-item" onclick="closeSheet();editarTreino('${current.id}')"><span class="mi-ic">✏️</span> Editar este treino</div>`:""}
+    <div class="menu-item" onclick="closeSheet();resgateSheet()"><span class="mi-ic">🩹</span>
+      <div>Recuperar histórico<div class="mi-sub">traz de volta cargas que sumiram</div></div></div>
     <div class="menu-item" onclick="closeSheet();buscarAtualizacao()"><span class="mi-ic">🔄</span>
       <div>Buscar atualização agora<div class="mi-sub">baixa a versão mais nova do app</div></div></div>
     <div class="menu-item danger" onclick="closeSheet();resetTudo()"><span class="mi-ic">🗑</span> Restaurar rotina padrão</div>
@@ -982,6 +1068,7 @@ function doReset(hard){
   const keep=gh(), hist=hard?{}:(db.historico||{});
   db=seed(); db.config.github=keep; db.historico=hist;
   save(); closeSheet(); goHome();
+  if(hard){ clearTimeout(cloudTimer); cloudTimer=null; cloudPush(true); }   /* apagar foi proposital: manda vazio mesmo */
   toast(hard?"Tudo apagado":"Rotina restaurada — histórico mantido ✓");
 }
 function desfazerSheet(){
@@ -999,6 +1086,71 @@ function doDesfazer(){
   snapshot("desfazer");
   db=migrate(b.db); db.config=db.config||{descansoSegundos:90}; db.config.github=keep;
   save(); closeSheet(); goHome(); toast("Dados restaurados ✓");
+}
+
+/* ---------- Resgate de histórico ----------
+   Duas fontes independentes do banco principal:
+   1) caderninho local (chave própria, só o "Concluir treino" escreve nela);
+   2) versões antigas do dados.json na nuvem (cada salvamento vira um commit no GitHub).
+   Os dois JUNTAM com o que existe hoje — nunca substituem. */
+function resgateSheet(){
+  const n=histCount({historico:journalHist()});
+  openSheet(`<h2>Recuperar histórico 🩹</h2>
+    <p>Se as cargas antigas sumiram, tente nesta ordem. Nenhuma das opções apaga o que você tem agora — elas só <b>somam</b>.</p>
+    <div class="menu-item" onclick="closeSheet();resgatarCaderninho()"><span class="mi-ic">📒</span>
+      <div>Do próprio aparelho<div class="mi-sub">${n===1?"1 sessão guardada":n+" sessões guardadas"} à parte</div></div></div>
+    ${ghConfigured()?`<div class="menu-item" onclick="closeSheet();versoesNuvemSheet()"><span class="mi-ic">☁️</span>
+      <div>De uma versão anterior da nuvem<div class="mi-sub">lista os salvamentos por data</div></div></div>`:""}
+    ${getSnapshot()?`<div class="menu-item" onclick="closeSheet();desfazerSheet()"><span class="mi-ic">↩️</span>
+      <div>Desfazer última mudança grande<div class="mi-sub">${new Date(getSnapshot().ts).toLocaleString("pt-BR")}</div></div></div>`:""}
+    <div class="ex-actions"><button class="btn btn-soft" onclick="closeSheet()">Fechar</button></div>`);
+}
+function resgatarCaderninho(){
+  const antes=histCount(db);
+  snapshot("recuperar do aparelho");
+  db.historico=mergeHist(db.historico, journalHist());
+  const dif=histCount(db)-antes;
+  save(); if(current)renderTreino(); else renderHome();
+  toast(dif>0?("Recuperei "+(dif===1?"1 sessão":dif+" sessões")+" ✓"):"Nada de novo aqui");
+}
+async function versoesNuvemSheet(){
+  if(!ghConfigured()){ toast("Nuvem não configurada"); return; }
+  const g=gh();
+  openSheet(`<h2>Versões anteriores ☁️</h2><p>Carregando…</p>`);
+  try{
+    const url=`https://api.github.com/repos/${g.user}/${g.repo}/commits?path=${encodeURIComponent(g.path||"dados.json")}&per_page=25&t=${Date.now()}`;
+    const r=await fetch(url,{headers:ghHeaders(),cache:"no-store"});
+    if(!r.ok) throw 0;
+    const cs=await r.json();
+    if(!cs.length){ openSheet(`<h2>Versões anteriores ☁️</h2><p>Nenhuma versão encontrada.</p>
+      <div class="ex-actions"><button class="btn btn-soft" onclick="closeSheet()">Fechar</button></div>`); return; }
+    let h=`<h2>Versões anteriores ☁️</h2><p>Cada linha é um salvamento seu. Toque numa data de <b>antes do problema</b> — o histórico dela é somado ao que você tem hoje.</p>`;
+    cs.forEach(c=>{
+      const d=new Date((c.commit&&c.commit.committer&&c.commit.committer.date)||Date.now());
+      h+=`<div class="menu-item" onclick="closeSheet();restaurarVersao('${c.sha}')"><span class="mi-ic">🕐</span>
+        <div>${d.toLocaleString("pt-BR")}<div class="mi-sub">${String(c.sha).slice(0,7)}</div></div></div>`;
+    });
+    h+=`<div class="ex-actions"><button class="btn btn-soft" onclick="closeSheet()">Fechar</button></div>`;
+    openSheet(h);
+  }catch(e){
+    openSheet(`<h2>Versões anteriores ☁️</h2><p>Não consegui ler as versões. Precisa de internet e do token conectado.</p>
+      <div class="ex-actions"><button class="btn btn-soft" onclick="closeSheet()">Fechar</button></div>`);
+  }
+}
+async function restaurarVersao(sha){
+  toast("Buscando essa versão…");
+  try{
+    const r=await fetch(ghUrl()+"?ref="+sha,{headers:ghHeaders(),cache:"no-store"});
+    if(!r.ok) throw 0;
+    const j=await r.json();
+    const antigo=JSON.parse(b64decode(j.content));
+    const antes=histCount(db);
+    snapshot("restaurar versão da nuvem");
+    db.historico=mergeHist(db.historico, antigo&&antigo.historico);
+    const dif=histCount(db)-antes;
+    save(); if(current)renderTreino(); else renderHome();
+    toast(dif>0?("Recuperei "+(dif===1?"1 sessão":dif+" sessões")+" ✓"):"Essa versão não tinha nada novo");
+  }catch(e){ toast("Não consegui ler essa versão"); }
 }
 
 /* ---------- Nuvem (GitHub) ---------- */
@@ -1026,33 +1178,57 @@ async function cloudPull(silent){
     db.config.github.sha=j.sha;
     const remote=JSON.parse(b64decode(j.content));
     const rU=remote.updatedAt||0, lU=db.updatedAt||0;
-    if(rU>lU){
-      if(current){ // treino em andamento: NÃO troca agora, senão perde o que está preenchendo
-        if(!silent)toast("Treino em andamento — sincroniza ao concluir");
-      }else if(histCount(remote)===0 && histCount(db)>0){
-        // nuvem veio vazia mas este aparelho tem progresso: nao apaga, devolve o bom pra nuvem
-        db.updatedAt=Date.now(); persist(); await cloudPush();
-        if(!silent)toast("Nuvem estava sem histórico — restaurei deste aparelho ☁️↑");
-      }else{
-        snapshot("baixar da nuvem");
-        remote.config=remote.config||{};
-        remote.config.github=db.config.github;   // mantém credenciais deste aparelho
-        db=migrate(remote); persist();
-        renderHome();
-        if(!silent)toast("Baixado da nuvem ☁️↓");
-      }
-    }else if(lU>rU){
-      await cloudPush(); if(!silent)toast("Enviado pra nuvem ☁️↑");
+
+    /* REGRA DE OURO: o histórico é sempre a UNIÃO dos dois lados.
+       Venha a rotina de onde vier, nenhuma sessão registrada some. */
+    const juntos=mergeHist(db.historico, remote.historico);
+    const nJ=histCount({historico:juntos});
+    const ganhouAqui=nJ>histCount(db);
+    const temMaisQueNuvem=nJ>histCount(remote);
+
+    if(rU>lU && !current){
+      snapshot("baixar da nuvem");
+      remote.config=remote.config||{};
+      remote.config.github=db.config.github;   // mantém credenciais deste aparelho
+      const novo=migrate(remote);
+      novo.historico=juntos;                   // rotina da nuvem + histórico dos dois
+      db=novo;
+      if(temMaisQueNuvem) db.updatedAt=Date.now();
+      persist(); renderHome();
+      if(temMaisQueNuvem) await cloudPush(true);
+      if(!silent)toast("Sincronizado ☁️↓");
     }else{
-      if(!silent)toast("Já sincronizado ✓");
+      if(ganhouAqui){ db.historico=juntos; db.updatedAt=Date.now(); persist(); if(current)renderTreino(); else renderHome(); }
+      if(rU>lU && current){
+        if(!silent)toast("Treino em andamento — sincroniza ao concluir");
+      }else if(lU>rU || temMaisQueNuvem){
+        await cloudPush(); if(!silent)toast("Enviado pra nuvem ☁️↑");
+      }else if(!silent){
+        toast("Já sincronizado ✓");
+      }
     }
   }catch(e){ if(!silent)toast("Sem conexão com a nuvem"); }
 }
-async function cloudPush(){
+/* force=true pula a junção (usado quando o histórico JÁ foi juntado, ou num apagar-tudo proposital) */
+async function cloudPush(force){
   if(!ghConfigured()||cloudBusy) return;
   cloudBusy=true;
   try{
     const g=db.config.github;
+    /* TRAVA: antes de gravar, lê o que está na nuvem e junta o histórico.
+       Assim nenhum aparelho consegue apagar as cargas do outro por descuido. */
+    if(!force){
+      try{
+        const chk=await fetch(ghUrl()+"?t="+Date.now(),{headers:ghHeaders(),cache:"no-store"});
+        if(chk.ok){
+          const cj=await chk.json();
+          g.sha=cj.sha;
+          const rem=JSON.parse(b64decode(cj.content));
+          const m=mergeHist(db.historico, rem&&rem.historico);
+          if(histCount({historico:m})>histCount(db)){ db.historico=m; db.updatedAt=Date.now(); persist(); }
+        }else if(chk.status===404){ g.sha=null; }
+      }catch(e){}
+    }
     const payload=Object.assign({},db);
     payload.config=Object.assign({},db.config); payload.config.github=undefined; // nunca grava o token no arquivo
     const body={message:"treino "+new Date().toISOString(),content:b64encode(JSON.stringify(payload))};
@@ -1191,6 +1367,15 @@ document.querySelectorAll("#restBar [data-rest]").forEach(b=>{
 // Ao voltar pro app (ou trocar de aba), recalcula na hora pelo relógio real
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden && restT) restTick(); });
 
+/* Saindo do app (iOS pode matar a página a qualquer momento): garante a sessão
+   no disco e dispara a nuvem na hora, em vez de esperar o debounce de 1,5s. */
+function flushTudo(){
+  try{ if(current) saveLive(); }catch(e){}
+  try{ if(cloudTimer){ clearTimeout(cloudTimer); cloudTimer=null; cloudPush(); } }catch(e){}
+}
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) flushTudo(); });
+window.addEventListener("pagehide", flushTudo);
+
 /* ---------- Start ---------- */
 if(!restoreLive()) goHome();   // se havia treino no meio, reabre com tudo que já estava preenchido
 restoreRest();                 // se o descanso estava rodando, retoma contando pelo relógio real
@@ -1204,7 +1389,7 @@ if("serviceWorker" in navigator){
   let jaRecarregou=false;
   navigator.serviceWorker.addEventListener("controllerchange",()=>{
     if(!tinhaSW||jaRecarregou||current) return;
-    jaRecarregou=true; location.reload();
+    jaRecarregou=true; try{ flushTudo(); }catch(e){} location.reload();
   });
   window.addEventListener("load",()=>{
     navigator.serviceWorker.register("./sw.js").then(r=>{ r.update().catch(()=>{}); }).catch(()=>{});

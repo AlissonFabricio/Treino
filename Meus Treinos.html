@@ -77,6 +77,7 @@
   .pill{background:var(--card2); border:1px solid var(--line); border-radius:99px;
     padding:3px 9px; font-size:11.5px; font-weight:600; color:var(--muted); white-space:nowrap;}
   .pill.hl{color:var(--ok); border-color:rgba(47,213,113,.35);}
+  .pill.go{color:#ffcf5e; border-color:rgba(255,207,94,.45); background:rgba(255,207,94,.10);}
   .chev{color:var(--muted); font-size:24px; flex:0 0 auto;}
 
   /* ===== Progress header (treino) ===== */
@@ -169,35 +170,38 @@
   .footbar .inner{max-width:640px; margin:0 auto; display:flex; gap:10px;}
   .btn-lg{flex:1; padding:17px; font-size:15.5px; border-radius:15px;}
 
-  /* ===== Rest timer overlay ===== */
-  #restOverlay{position:fixed; inset:0; z-index:45; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:6px;
-    background:rgba(8,10,14,.94); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-    opacity:0; pointer-events:none; transition:opacity .25s;}
-  #restOverlay.show{opacity:1; pointer-events:auto;}
-  .rest-label{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:2px; font-weight:800;}
-  .rest-ex{font-size:15px; color:var(--txt); font-weight:700; margin-top:2px; padding:0 30px; text-align:center;}
-  .ring-wrap{position:relative; width:240px; height:240px; margin:18px 0 8px;}
-  .ring-wrap svg{transform:rotate(-90deg); width:100%; height:100%;}
-  .ring-bg{fill:none; stroke:var(--card3); stroke-width:12;}
-  .ring-fg{fill:none; stroke:url(#ringGrad); stroke-width:12; stroke-linecap:round;
-    transition:stroke-dashoffset 1s linear;}
-  .ring-center{position:absolute; inset:0; display:flex; flex-direction:column;
-    align-items:center; justify-content:center;}
-  #restTime{font-size:56px; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:1px;}
-  .rest-total{font-size:12.5px; color:var(--muted); font-weight:600; margin-top:2px;}
-  .rest-adjust{display:flex; gap:12px; margin-top:10px;}
-  .radj{width:74px; padding:14px 0; border-radius:14px; background:var(--card2);
-    border:1px solid var(--line); font-weight:800; font-size:15px;}
-  .radj:active{background:var(--card3);}
-  .rest-presets{display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; justify-content:center; padding:0 20px;}
-  .rpreset{padding:9px 15px; border-radius:99px; background:var(--card2); border:1px solid var(--line);
-    font-size:13px; font-weight:700; color:var(--muted);}
+  /* ===== Rest timer (barra compacta flutuante) ===== */
+  #restBar{position:fixed; left:10px; right:10px; bottom:96px; z-index:40;
+    max-width:620px; margin:0 auto;
+    background:linear-gradient(135deg,rgba(26,32,44,.98),rgba(17,21,30,.98));
+    border:1px solid var(--line); border-radius:16px;
+    box-shadow:0 16px 38px -12px rgba(0,0,0,.7);
+    padding:10px 12px 9px;
+    transform:translateY(16px); opacity:0; pointer-events:none; transition:.22s;}
+  #restBar.show{transform:translateY(0); opacity:1; pointer-events:auto;}
+  #restBar.done{border-color:var(--ok); box-shadow:0 16px 38px -12px rgba(47,213,113,.5);}
+  .rb-top{display:flex; align-items:center; gap:10px;}
+  .rb-info{display:flex; flex-direction:column; min-width:0; flex:1;}
+  .rb-label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1.5px; font-weight:800;}
+  .rb-ex{font-size:12.5px; color:var(--txt); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .rb-time{font-size:30px; font-weight:900; font-variant-numeric:tabular-nums; letter-spacing:.5px; padding:0 2px;}
+  #restBar.done .rb-time{color:var(--ok);}
+  .rb-actions{display:flex; gap:6px; align-items:center;}
+  .rb-adj{padding:9px 10px; border-radius:11px; background:var(--card2);
+    border:1px solid var(--line); font-weight:800; font-size:13px; color:var(--txt);}
+  .rb-adj:active{background:var(--card3);}
+  .rb-skip{width:38px; height:38px; border-radius:11px; background:var(--card2);
+    border:1px solid var(--line); font-size:15px; font-weight:800; color:var(--muted);}
+  .rb-skip:active{transform:scale(.94);}
+  .rb-track{height:5px; border-radius:99px; background:var(--card3); margin-top:9px; overflow:hidden;}
+  .rb-fill{height:100%; border-radius:99px; width:100%;
+    background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width .25s linear;}
+  #restBar.done .rb-fill{background:var(--ok);}
+  .rb-presets{display:flex; gap:6px; margin-top:9px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:1px;}
+  .rb-presets::-webkit-scrollbar{display:none;}
+  .rpreset{flex:0 0 auto; padding:7px 12px; border-radius:99px; background:var(--card2);
+    border:1px solid var(--line); font-size:12px; font-weight:700; color:var(--muted);}
   .rpreset.on{background:rgba(79,140,255,.15); border-color:var(--accent); color:var(--accent);}
-  #restSkip{margin-top:22px; padding:15px 44px; border-radius:15px; font-size:15px; font-weight:800;
-    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff;
-    box-shadow:0 10px 26px -8px rgba(79,140,255,.55);}
-  #restSkip:active{transform:scale(.96);}
 
   /* ===== Sheet / Modal ===== */
   .backdrop{position:fixed; inset:0; z-index:50; background:rgba(0,0,0,.6); opacity:0;
@@ -272,30 +276,21 @@
 </div>
 
 <!-- Rest overlay -->
-<div id="restOverlay">
-  <div class="rest-label">Descanso</div>
-  <div class="rest-ex" id="restExName"></div>
-  <div class="ring-wrap">
-    <svg viewBox="0 0 240 240">
-      <defs>
-        <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#4f8cff"/><stop offset="100%" stop-color="#2fd571"/>
-        </linearGradient>
-      </defs>
-      <circle class="ring-bg" cx="120" cy="120" r="106"/>
-      <circle class="ring-fg" id="ringFg" cx="120" cy="120" r="106"/>
-    </svg>
-    <div class="ring-center">
-      <div id="restTime">1:30</div>
-      <div class="rest-total" id="restTotalLbl">de 1:30</div>
+<div id="restBar">
+  <div class="rb-top">
+    <div class="rb-info">
+      <span class="rb-label">Descanso</span>
+      <span class="rb-ex" id="restExName"></span>
+    </div>
+    <div class="rb-time" id="restTime">1:30</div>
+    <div class="rb-actions">
+      <button class="rb-adj" data-rest="-15">−15</button>
+      <button class="rb-adj" data-rest="15">+15</button>
+      <button class="rb-skip" id="restSkip" title="Encerrar descanso">✕</button>
     </div>
   </div>
-  <div class="rest-adjust">
-    <button class="radj" data-rest="-15">−15s</button>
-    <button class="radj" data-rest="15">+15s</button>
-  </div>
-  <div class="rest-presets" id="restPresets"></div>
-  <button id="restSkip">Pular descanso</button>
+  <div class="rb-track"><div class="rb-fill" id="restFill"></div></div>
+  <div class="rb-presets" id="restPresets"></div>
 </div>
 
 <div class="backdrop" id="backdrop"></div>
@@ -306,6 +301,14 @@
 "use strict";
 const KEY="treinoApp.v1";
 const uid=()=>Math.random().toString(36).slice(2,9);
+/* --- IDs estaveis por nome: o historico deixa de depender de id aleatorio --- */
+const SEED_VER=3;
+const APP_VER="3.3 · 16/09/2026";   /* aparece no menu ⚙️ — serve pra saber qual versao esta rodando no aparelho */
+const BKKEY="treinoApp.backup.v1";
+const JRNKEY="treinoApp.journal.v1";   /* caderninho a parte: toda sessao concluida fica registrada aqui tambem */
+const slugify=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+const sid=(...p)=>"x-"+p.map(slugify).join("-");
+let ID_MAP={};
 const PRESETS=[30,45,60,90,120,180];
 const GRADS=[
   "linear-gradient(135deg,#4f8cff,#3b6fe0)",
@@ -319,51 +322,215 @@ const ICONS=["🏋️","💪","🦵","🍑","🔥","⚡"];
 
 /* ---------- Seed (extraído da planilha) ---------- */
 function seed(){
-  const mk=(nome,series,reps,peso,obs="")=>({id:uid(),nome,series,repsAlvo:reps,pesoRef:peso,obs,restSecs:null});
+  const mk=(nome,series,reps,peso,obs="",rest=null)=>({id:sid(nome),nome,series,repsAlvo:reps,pesoRef:peso,obs,restSecs:rest});
   return {
     treinos:[
-      {id:uid(), nome:"Peito + Tríceps", letra:"A", exercicios:[
-        mk("Supino Halter 30°",3,8,18), mk("Voador Pack Deck",3,8,17.5),
-        mk("Supino Máquina",3,8,30), mk("Supino Inclinado Halter",3,8,12),
-        mk("Pull Over",3,8,12),
-        mk("Tríceps Testa Polia/Barra W",3,8,15), mk("Tríceps Polia Barra V",3,10,15,"RPE-9/10"),
-        mk("Tríceps Francês Polia",3,6,15), mk("Tríceps Máquina",3,9,27.5,"RIR+1")
+      {id:sid("t","Tronco A"), nome:"Tronco A", letra:"A", exercicios:[
+        mk("Supino Halter 30°",3,8,18), mk("Remada Máquina",3,9,57.2),
+        mk("Supino Máquina",3,8,30), mk("Puxador c/ Triângulo",3,9,40),
+        mk("Voador Pack Deck",3,8,17.5), mk("Elevação Lateral Polia",3,6,3.7),
+        mk("Rosca Direta Barra W",3,8,20,"RIR-1"), mk("Tríceps Testa Polia/Barra W",3,8,15),
+        mk("Lenhador na Polia",3,15,15,"cada lado · 15-20 reps, sem tranco",45),
+        mk("Elevação de Pernas",3,12,0,"peso do corpo",45)
       ]},
-      {id:uid(), nome:"Costas + Bíceps", letra:"B", exercicios:[
-        mk("Puxador c/ Triângulo",3,9,40), mk("Remada Máquina",3,9,57.2),
-        mk("Puxador Triângulo",3,7,40), mk("Pulldown Máquina",3,8,45),
-        mk("Scott Barra",3,10,25,"RIR+1"), mk("Rosca Direta Barra W",3,8,20,"RIR-1"),
-        mk("Rosca Alt. 45°",3,9,8,"RIR+1"), mk("Bíceps Máquina",3,9,17.5),
-        mk("Bíceps Polia",3,9,17)
+      {id:sid("t","Perna A + Core"), nome:"Perna A + Core", letra:"B", exercicios:[
+        mk("Leg Press 90°",3,8,160,"RPE-9"), mk("Mesa Flexora",3,8,41),
+        mk("Cadeira Extensora",3,8,40), mk("Abdutor",3,8,65),
+        mk("Panturrilha",3,6,80,"RIR+1"), mk("Desenvolvimento Máquina",3,6,20),
+        mk("Rosca Alt. 45°",3,9,8,"RIR+1"), mk("Tríceps Polia Barra V",3,10,15,"RPE-9/10"),
+        mk("Prancha Lateral",3,40,0,"SEGUNDOS por lado",45),
+        mk("Abdominal na Polia",3,12,20,"ajoelhado · subir carga",45)
       ]},
-      {id:uid(), nome:"Quadríceps + Adutores", letra:"C", exercicios:[
-        mk("Cadeira Flexora",3,8,42.5), mk("Cadeira Extensora",3,8,40),
-        mk("Abdutor",3,8,65), mk("Adutor",3,8,55), mk("Stiff",3,10,10,"RPE-10")
+      {id:sid("t","Tronco B"), nome:"Tronco B", letra:"C", exercicios:[
+        mk("Paralelas (Mergulho)",3,8,0,"tronco inclinado à frente · peito inferior"),
+        mk("Pulldown Máquina",3,8,45), mk("Remada Curvada",3,8,30,"cotovelo aberto"),
+        mk("Pull Over",3,8,12), mk("Remada Alta Barra",3,6,30,"RIR-1"),
+        mk("Face Pull",3,8,12), mk("Crucifixo Inverso",3,15,5,"carga leve · execução > peso"),
+        mk("Scott Barra",3,10,25,"RIR+1"), mk("Tríceps Francês Polia",3,6,15)
       ]},
-      {id:uid(), nome:"Posterior + Glúteo", letra:"D", exercicios:[
-        mk("Leg Press Vertical",3,8,100), mk("Leg Press 90°",3,8,160,"RPE-9"),
-        mk("Mesa Flexora",3,8,41), mk("Panturrilha",3,6,80,"RIR+1")
-      ]},
-      {id:uid(), nome:"Ombro", letra:"E", exercicios:[
-        mk("Desenvolvimento Máquina",3,6,20), mk("Elevação Lateral Polia",3,6,3.7),
-        mk("Face Pull",3,8,12), mk("Remada Alta Barra",3,6,30,"RIR-1"),
-        mk("Encolhimento Trapézio",3,8,12)
+      {id:sid("t","Perna B + Core"), nome:"Perna B + Core", letra:"D", exercicios:[
+        mk("Búlgaro",3,10,10,"cada perna · começar leve"), mk("Stiff",3,10,10,"RPE-10"),
+        mk("Cadeira Flexora",3,8,42.5), mk("Adutor",3,8,55),
+        mk("Panturrilha Sentado",3,12,40,"sóleo"), mk("Rosca Martelo",3,10,10),
+        mk("Tríceps Máquina",3,9,27.5,"RIR+1"),
+        mk("Pallof Press",3,12,15,"cada lado · não deixar o tronco girar",45),
+        mk("Protração Serrátil",3,15,10,"empurrar a escápula · polia ou flexão",45)
       ]}
     ],
     historico:{},
     config:{descansoSegundos:90, github:null},
-    updatedAt:Date.now()
+    removidos:[],
+    seedVer:SEED_VER,
+    updatedAt:0   /* ZERO de proposito: rotina padrao nunca pode vencer a nuvem num sync */
   };
 }
-
 /* ---------- Estado ---------- */
 let db=load();
 function load(){
-  try{ const raw=localStorage.getItem(KEY); if(raw){ const o=JSON.parse(raw); if(!o.updatedAt)o.updatedAt=Date.now(); if(!o.config)o.config={descansoSegundos:90}; return o; } }catch(e){}
-  const s=seed(); localStorage.setItem(KEY,JSON.stringify(s)); return s;
+  let raw=null;
+  try{ raw=localStorage.getItem(KEY); }catch(e){}
+  if(raw){
+    let o=null;
+    try{ o=JSON.parse(raw); }catch(e){ o=null; }
+    if(o && typeof o==="object" && o.treinos){
+      if(!o.updatedAt) o.updatedAt=1;          /* sem data conhecida: deixa a nuvem mandar, o historico se junta de qualquer jeito */
+      let m=o;
+      try{ m=migrate(o); }
+      catch(e){ m=o; if(!m.historico)m.historico={}; if(!m.config)m.config={descansoSegundos:90}; }   /* migracao quebrou? fica com o que ja tinha, NAO reseta */
+      try{ localStorage.setItem(KEY,JSON.stringify(m)); }catch(e){}
+      return m;
+    }
+    /* tem dado gravado mas ilegivel: guarda de lado em vez de apagar por cima */
+    try{ localStorage.setItem(KEY+".quarentena", raw); }catch(e){}
+  }
+  const s=seed();
+  try{ s.historico=mergeHist({}, journalHist()); }catch(e){}   /* comeco do zero reaproveita o caderninho, se houver */
+  try{ localStorage.setItem(KEY,JSON.stringify(s)); }catch(e){}
+  return s;
 }
-function persist(){ localStorage.setItem(KEY,JSON.stringify(db)); }
-function save(){ db.updatedAt=Date.now(); persist(); scheduleCloudPush(); }
+
+/* ---------- Caderninho: registro a parte de cada sessao concluida ----------
+   Vive numa chave so dele. Nada alem do "Concluir treino" escreve aqui, entao
+   mesmo que o banco principal se perca, as cargas registradas continuam existindo. */
+function journalAdd(entradas){
+  try{
+    let j=JSON.parse(localStorage.getItem(JRNKEY)||"[]");
+    if(!Array.isArray(j)) j=[];
+    entradas.forEach(e=>j.push(e));
+    while(j.length>400) j.shift();
+    localStorage.setItem(JRNKEY, JSON.stringify(j));
+  }catch(e){}
+}
+function journalHist(){
+  let j=[]; try{ j=JSON.parse(localStorage.getItem(JRNKEY)||"[]"); }catch(e){ j=[]; }
+  const h={};
+  (Array.isArray(j)?j:[]).forEach(e=>{
+    if(!e||!e.exId||!Array.isArray(e.series)) return;
+    (h[e.exId]=h[e.exId]||[]).push({data:e.data, ts:e.ts, series:e.series});
+  });
+  return h;
+}
+
+/* ---------- Uniao de historicos: junta os dois lados, nunca apaga ----------
+   Usado no sync e no resgate. Duas sessoes sao "a mesma" se tem a mesma data e
+   exatamente as mesmas series. */
+function histTs(s){
+  if(s && s.ts) return s.ts;
+  const m=/^(\d{1,2})\/(\d{1,2})$/.exec(String((s&&s.data)||""));
+  if(m){
+    const hoje=new Date();
+    let d=new Date(hoje.getFullYear(), (+m[2])-1, +m[1]);
+    if(d.getTime()-hoje.getTime() > 30*864e5) d=new Date(hoje.getFullYear()-1, (+m[2])-1, +m[1]);
+    return d.getTime();
+  }
+  return 0;
+}
+function histSig(s){
+  return String((s&&s.data)||"")+"|"+(((s&&s.series)||[]).map(x=>String(x.peso)+"x"+String(x.reps)).join(","));
+}
+function mergeHist(a,b){
+  const out={};
+  const add=h=>{
+    if(!h||typeof h!=="object") return;
+    for(const k in h){
+      const arr=h[k]; if(!Array.isArray(arr)) continue;
+      if(!out[k]) out[k]=[];
+      const vistos={}; out[k].forEach(x=>{ vistos[histSig(x)]=1; });
+      arr.forEach(x=>{ if(!x||!Array.isArray(x.series)) return; const g=histSig(x); if(!vistos[g]){ vistos[g]=1; out[k].push(x); } });
+    }
+  };
+  add(a); add(b);
+  for(const k in out){
+    out[k].sort((x,y)=>histTs(x)-histTs(y));
+    if(out[k].length>30) out[k]=out[k].slice(-30);
+  }
+  return out;
+}
+
+/* ---------- Protecao de dados: migracao, merge do seed e snapshot ---------- */
+function histCount(o){ let n=0; const h=(o&&o.historico)||{}; for(const k in h) n+=(h[k]||[]).length; return n; }
+function snapshot(motivo,obj){
+  try{ const src=obj||db; localStorage.setItem(BKKEY, JSON.stringify({ts:Date.now(), motivo:motivo||"", db:JSON.parse(JSON.stringify(src))})); }catch(e){}
+}
+function getSnapshot(){ try{ return JSON.parse(localStorage.getItem(BKKEY)||"null"); }catch(e){ return null; } }
+
+/* Troca ids aleatorios por ids derivados do NOME e leva o historico junto. */
+function remapIds(o){
+  ID_MAP={};
+  const used={}, take=base=>{ let id=base,i=2; while(used[id]){ id=base+"-"+(i++); } used[id]=1; return id; };
+  const hist=o.historico||{}, novo={};
+  (o.treinos||[]).forEach(t=>{
+    const tid=take(sid("t",t.nome));
+    if(tid!==t.id){ ID_MAP[t.id]=tid; t.id=tid; }
+    (t.exercicios||[]).forEach(ex=>{
+      const eid=take(sid(ex.nome));
+      if(eid!==ex.id) ID_MAP[ex.id]=eid;
+      const antigo=hist[ex.id]||[], ja=novo[eid]||[];
+      if(antigo.length||ja.length) novo[eid]=ja.concat(antigo).slice(-30);
+      ex.id=eid;
+    });
+  });
+  for(const k in hist){ if(!novo[k] && !ID_MAP[k]) novo[k]=hist[k]; }   /* nao joga fora historico orfao */
+  o.historico=novo;
+  if(Array.isArray(o.removidos)) o.removidos=o.removidos.map(id=>ID_MAP[id]||id);
+  return o;
+}
+
+/* Aplica mudancas de rotina SEM apagar nada: so adiciona o que e novo. */
+function mergeSeed(o){
+  if(o.seedVer===SEED_VER) return o;
+  const s=seed(), fora={}; (o.removidos||[]).forEach(id=>fora[id]=1);
+  o.treinos=o.treinos||[];
+  s.treinos.forEach(st=>{
+    const t=o.treinos.find(x=>x.id===st.id);
+    if(!t){ if(!fora[st.id]) o.treinos.push(st); return; }
+    t.exercicios=t.exercicios||[];
+    st.exercicios.forEach((se,i)=>{
+      if(fora[se.id]) return;
+      if(!t.exercicios.some(x=>x.id===se.id)) t.exercicios.splice(Math.min(i,t.exercicios.length),0,se);
+    });
+  });
+  o.seedVer=SEED_VER;
+  return o;
+}
+
+/* v3: troca a DIVISAO inteira pela nova, preservando historico e os ajustes do usuario.
+   O historico e indexado por id derivado do nome, entao exercicio que continua na rotina
+   mantem tudo; exercicio que saiu tem o historico guardado (orfao) e volta se readicionado. */
+function restructure(o){
+  const s=seed(), ant={};
+  (o.treinos||[]).forEach(t=>(t.exercicios||[]).forEach(ex=>{ ant[ex.id]=ex; }));
+  const fora={}; (o.removidos||[]).forEach(id=>fora[id]=1);
+  s.treinos.forEach(t=>{
+    t.exercicios=t.exercicios.filter(ex=>!fora[ex.id]).map(ex=>{
+      const a=ant[ex.id];
+      if(!a) return ex;
+      return {id:ex.id, nome:ex.nome,
+        series:(a.series!=null?a.series:ex.series),
+        repsAlvo:(a.repsAlvo!=null?a.repsAlvo:ex.repsAlvo),
+        pesoRef:(a.pesoRef!=null?a.pesoRef:ex.pesoRef),
+        obs:(a.obs||ex.obs), restSecs:(a.restSecs!=null?a.restSecs:ex.restSecs)};
+    });
+  });
+  o.treinos=s.treinos;
+  return o;
+}
+
+function migrate(o){
+  if(!o.historico) o.historico={};
+  if(!o.config) o.config={descansoSegundos:90};
+  if(!Array.isArray(o.removidos)) o.removidos=[];
+  if(o.seedVer!==SEED_VER) snapshot("atualiza\u00e7\u00e3o do app", o);   /* rede de seguranca antes de mexer */
+  remapIds(o);
+  if((o.seedVer||0)<3) restructure(o);   /* v3: divisao 4 dias (2 tronco + 2 perna+core) */
+  mergeSeed(o);
+  return o;
+}
+function persist(){
+  try{ localStorage.setItem(KEY,JSON.stringify(db)); return true; }
+  catch(e){ return false; }   /* sem espaco no aparelho: quem chamou decide o que avisar */
+}
+function save(){ db.updatedAt=Date.now(); const ok=persist(); scheduleCloudPush(); return ok; }
 
 /* ---------- Utils ---------- */
 const $=s=>document.querySelector(s);
@@ -380,8 +547,76 @@ function escAttr(s){ return String(s).replace(/"/g,"&quot;"); }
 let current=null;
 let liveSession={};
 
+/* ---------- Sessões em andamento (várias ao mesmo tempo; sobrevivem a navegar/recarregar/2º plano) ---------- */
+const LIVEKEY="treinoApp.live.v1";
+let liveAll={};      // { [treinoId]: { sets:{[exId]:[{peso,reps,feito}]}, ts } }
+let liveLast=null;   // último treino que estava aberto
+function loadLiveAll(){
+  let L; try{ L=JSON.parse(localStorage.getItem(LIVEKEY)||"null"); }catch(e){ L=null; }
+  if(!L){ liveAll={}; liveLast=null; return; }
+  if(L.treinoId && L.sets){ liveAll={[L.treinoId]:{sets:L.sets, ts:L.ts||Date.now()}}; liveLast=L.treinoId; } // migra formato antigo (1 treino só)
+  else { liveAll=L.sessions||{}; liveLast=L.lastTreinoId||null; }
+  if(Object.keys(ID_MAP).length){   /* ids mudaram na migracao: leva a sessao em andamento junto */
+    const out={};
+    Object.keys(liveAll).forEach(tid=>{
+      const s=liveAll[tid]||{}, sets={};
+      Object.keys(s.sets||{}).forEach(eid=>{ sets[ID_MAP[eid]||eid]=s.sets[eid]; });
+      out[ID_MAP[tid]||tid]={sets, ts:s.ts};
+    });
+    liveAll=out;
+    if(liveLast) liveLast=ID_MAP[liveLast]||liveLast;
+  }
+  const agora=Date.now();
+  Object.keys(liveAll).forEach(id=>{ const s=liveAll[id]; if(!s||!s.sets||(s.ts&&agora-s.ts>12*3600*1000)) delete liveAll[id]; }); // esquece cada treino depois de 12h
+  if(liveLast && !liveAll[liveLast]) liveLast=null;
+}
+function persistLiveAll(){ try{ localStorage.setItem(LIVEKEY, JSON.stringify({sessions:liveAll, lastTreinoId:liveLast})); }catch(e){} }
+function saveLive(){
+  if(!current){ return; }
+  liveAll[current.id]={sets:liveSession, ts:Date.now()};
+  liveLast=current.id;
+  persistLiveAll();
+}
+function clearLive(){   // limpa só o treino atual (ao concluir)
+  if(current){ delete liveAll[current.id]; if(liveLast===current.id) liveLast=null; }
+  persistLiveAll();
+}
+function hydrateLive(t){   // monta liveSession do que já estava salvo desse treino, ou dos valores padrão
+  const saved = liveAll[t.id] && liveAll[t.id].sets;
+  liveSession={};
+  t.exercicios.forEach(ex=>{
+    const sv = saved && saved[ex.id];
+    liveSession[ex.id]=(Array.isArray(sv)&&sv.length)
+      ? sv.map(s=>({peso:s.peso==null?"":s.peso, reps:s.reps==null?"":s.reps, feito:!!s.feito}))
+      : buildSets(ex);
+  });
+  liveAll[t.id]={sets:liveSession, ts:Date.now()};
+  liveLast=t.id;
+  persistLiveAll();
+}
+function showTreinoView(){
+  $("#viewHome").classList.add("hidden");
+  $("#viewTreino").classList.remove("hidden");
+  $("#footbar").classList.remove("hidden");
+  $("#backBtn").style.display="flex";
+  $("#pageTitle").textContent=current.nome;
+  $("#pageSub").textContent="Treino "+letra(current);
+  window.scrollTo(0,0);
+  renderTreino();
+}
+function restoreLive(){
+  loadLiveAll();
+  if(!liveLast) return false;
+  const t=db.treinos.find(x=>x.id===liveLast);
+  if(!t || !liveAll[liveLast]){ liveLast=null; persistLiveAll(); return false; }
+  current=t;
+  hydrateLive(t);
+  showTreinoView();
+  return true;
+}
+
 function goHome(){
-  current=null; liveSession={};
+  current=null; liveSession={};   // mantém liveAll em memória — os treinos no meio continuam salvos
   $("#viewTreino").classList.add("hidden");
   $("#viewHome").classList.remove("hidden");
   $("#footbar").classList.add("hidden");
@@ -393,18 +628,8 @@ function goHome(){
 }
 function openTreino(id){
   current=db.treinos.find(t=>t.id===id); if(!current) return;
-  liveSession={};
-  current.exercicios.forEach(ex=>{
-    liveSession[ex.id]=Array.from({length:ex.series},()=>({peso:"",reps:"",feito:false}));
-  });
-  $("#viewHome").classList.add("hidden");
-  $("#viewTreino").classList.remove("hidden");
-  $("#footbar").classList.remove("hidden");
-  $("#backBtn").style.display="flex";
-  $("#pageTitle").textContent=current.nome;
-  $("#pageSub").textContent="Treino "+letra(current);
-  window.scrollTo(0,0);
-  renderTreino();
+  hydrateLive(current);   // se já havia progresso nesse treino, volta com tudo preenchido
+  showTreinoView();
 }
 
 /* ---------- Home ---------- */
@@ -415,6 +640,13 @@ function lastDateOf(t){
     if(h&&h.length){ const d=h[h.length-1].data; if(d) best=d; }
   });
   return best;
+}
+function liveDone(t){   // nº de séries já marcadas 'feito' na sessão em andamento desse treino (0 = sem progresso)
+  const s = liveAll[t.id] && liveAll[t.id].sets;
+  if(!s) return 0;
+  let n=0;
+  Object.keys(s).forEach(exId=>{ const arr=s[exId]; if(Array.isArray(arr)) arr.forEach(x=>{ if(x&&x.feito) n++; }); });
+  return n;
 }
 function renderHome(){
   const v=$("#viewHome");
@@ -427,12 +659,13 @@ function renderHome(){
     db.treinos.forEach((t,i)=>{
       const nEx=t.exercicios.length;
       const ld=lastDateOf(t);
+      const andamento=liveDone(t);
       html+=`<button class="treino-card" style="--grad:${grad(i)}" onclick="openTreino('${t.id}')">
         <div class="badge">${letra(t)}</div>
         <div class="info"><div class="nome">${esc(t.nome)}</div>
           <div class="meta">
             <span class="pill">${ICONS[i%ICONS.length]} ${nEx} exercícios</span>
-            ${ld?`<span class="pill hl">último: ${ld}</span>`:`<span class="pill">nunca feito</span>`}
+            ${andamento?`<span class="pill go">▶ em andamento · ${andamento} série${andamento>1?"s":""}</span>`:(ld?`<span class="pill hl">último: ${ld}</span>`:`<span class="pill">nunca feito</span>`)}
           </div></div>
         <div class="chev">›</div></button>`;
     });
@@ -446,6 +679,23 @@ function renderHome(){
 function lastSession(exId){
   const h=db.historico[exId];
   return (h&&h.length)?h[h.length-1]:null;
+}
+function buildSets(ex){
+  // pré-preenche cada série: 1ª vez usa referência da planilha + reps alvo;
+  // depois usa peso/reps do que foi registrado da última vez.
+  const ls=lastSession(ex.id);
+  const rec=(ls&&ls.series.length)?ls.series:null;
+  return Array.from({length:ex.series},(_,i)=>{
+    let peso="", reps="";
+    if(rec){
+      const s=rec[i]||rec[rec.length-1];
+      peso=s.peso; reps=s.reps;
+    }else{
+      if(ex.pesoRef!=null&&ex.pesoRef!=="") peso=ex.pesoRef;
+      if(ex.repsAlvo!=null&&ex.repsAlvo!=="") reps=ex.repsAlvo;
+    }
+    return {peso,reps,feito:false};
+  });
 }
 function prevInfo(ex){
   const ls=lastSession(ex.id);
@@ -477,7 +727,7 @@ function renderTreino(){
   let html=`<div class="prog-card">
     <div class="prog-info">
       <div class="prog-label">Progresso do treino</div>
-      <div class="prog-count">${done} <span style="color:var(--muted);font-size:14px">/ ${total} séries</span></div>
+      <div class="prog-count"><span id="progDone">${done}</span> <span style="color:var(--muted);font-size:14px">/ ${total} séries</span></div>
       <div class="prog-track"><div class="prog-fill" id="progFill" style="width:${pct}%"></div></div>
     </div>
     <div class="prog-ring">
@@ -515,15 +765,16 @@ function renderTreino(){
         <div class="set-n">${si+1}ª</div>
         <div class="fieldwrap"><label>Peso (kg)</label>
           <input type="number" inputmode="decimal" step="0.5" value="${s.peso}"
-            onchange="setVal('${ex.id}',${si},'peso',this.value)" placeholder="${prev.peso!==""?fmtNum(prev.peso):"0"}"></div>
+            oninput="setVal('${ex.id}',${si},'peso',this.value)" onchange="setVal('${ex.id}',${si},'peso',this.value)" placeholder="${prev.peso!==""?fmtNum(prev.peso):"0"}"></div>
         <div class="fieldwrap"><label>Reps</label>
           <input type="number" inputmode="numeric" value="${s.reps}"
-            onchange="setVal('${ex.id}',${si},'reps',this.value)" placeholder="${ex.repsAlvo}"></div>
+            oninput="setVal('${ex.id}',${si},'reps',this.value)" onchange="setVal('${ex.id}',${si},'reps',this.value)" placeholder="${ex.repsAlvo}"></div>
         <button class="check${s.feito?" done":""}" onclick="toggleDone('${ex.id}',${si},this)">✓</button>
       </div>`;
     });
     html+=`</div>
       <div class="ex-actions">
+        <button class="btn btn-soft" onclick="removeSet('${ex.id}')">− Série</button>
         <button class="btn btn-soft" onclick="addSet('${ex.id}')">+ Série</button>
       </div>
     </div>`;
@@ -535,16 +786,18 @@ function updateProgress(){
   const {total,done}=countSets();
   const pct=total?Math.round(done/total*100):0;
   const C=2*Math.PI*24;
-  const f=$("#progFill"), r=$("#progRing"), p=$("#progPct");
+  const f=$("#progFill"), r=$("#progRing"), p=$("#progPct"), d=$("#progDone");
   if(f)f.style.width=pct+"%";
   if(r)r.style.strokeDashoffset=C*(1-pct/100);
   if(p)p.textContent=pct+"%";
+  if(d)d.textContent=done;
 }
 
 /* ---------- Ações de série ---------- */
 function setVal(exId,si,campo,val){
   const v=val===""?"":parseFloat(String(val).replace(",","."));
   liveSession[exId][si][campo]=(campo==="reps"&&v!=="")?Math.round(v):v;
+  saveLive();
 }
 function toggleDone(exId,si,el){
   const s=liveSession[exId][si];
@@ -556,35 +809,44 @@ function toggleDone(exId,si,el){
   const all=liveSession[exId].every(x=>x.feito);
   if(card)card.classList.toggle("complete",all);
   updateProgress();
-  if(s.feito){
-    if(navigator.vibrate)navigator.vibrate(30);
-    const ex=current.exercicios.find(e=>e.id===exId);
-    startRest(exRest(ex), ex?ex.nome:"");
-  }
+  saveLive();
+  if(s.feito&&navigator.vibrate)navigator.vibrate(30); // só um toque de confirmação; descanso é manual (botão ⏱)
 }
 function addSet(exId){
-  liveSession[exId].push({peso:"",reps:"",feito:false});
-  renderTreino();
+  const arr=liveSession[exId];
+  const prev=arr[arr.length-1]||{peso:"",reps:""};
+  arr.push({peso:prev.peso,reps:prev.reps,feito:false}); // nova série já com a mesma carga
+  saveLive(); renderTreino();
+}
+function removeSet(exId){
+  const arr=liveSession[exId];
+  if(arr.length<=1){ toast("Precisa de ao menos 1 série"); return; }
+  arr.pop(); saveLive(); renderTreino(); updateProgress();
 }
 
 /* ---------- Concluir ---------- */
 function finishTreino(){
-  let algum=false;
+  const agora=new Date();
+  const dataStr=agora.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});
+  let algum=false; const jrn=[];
   current.exercicios.forEach(ex=>{
-    const sets=liveSession[ex.id];
+    const sets=liveSession[ex.id]||[];
     const pre=sets.filter(s=>s.peso!==""||s.reps!==""||s.feito);
     if(pre.length){
       algum=true;
+      const series=pre.map(s=>({peso:s.peso,reps:s.reps,feito:s.feito}));
       if(!db.historico[ex.id]) db.historico[ex.id]=[];
-      db.historico[ex.id].push({
-        data:new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}),
-        series:pre.map(s=>({peso:s.peso,reps:s.reps,feito:s.feito}))
-      });
+      db.historico[ex.id].push({data:dataStr, ts:agora.getTime(), series});
       if(db.historico[ex.id].length>30) db.historico[ex.id].shift();
+      jrn.push({exId:ex.id, nome:ex.nome, data:dataStr, ts:agora.getTime(), series});
     }
   });
   if(!algum){ toast("Nada registrado ainda"); return; }
-  save(); confetti(); toast("Treino salvo! 💪🔥");
+  journalAdd(jrn);            /* 1o no caderninho (chave propria), depois no banco */
+  const ok=save();
+  if(!ok){ toast("⚠️ Não consegui salvar — sem espaço no aparelho"); return; }   /* mantem a sessao aberta pra nao perder nada */
+  clearTimeout(cloudTimer); cloudTimer=null; cloudPush();   /* nuvem AGORA, sem esperar 1,5s (o app pode ser fechado antes) */
+  clearLive(); confetti(); toast("Treino salvo! 💪🔥");
   setTimeout(goHome,600);
 }
 function confetti(){
@@ -601,46 +863,64 @@ function confetti(){
   }
 }
 
-/* ---------- Cronômetro ---------- */
-let restT=null, restLeft=0, restTotal=0;
-const RING_C=2*Math.PI*106;
+/* ---------- Cronômetro (relógio real: continua em 2º plano e sobrevive a recarregar) ---------- */
+const REST_KEY="treinoApp.rest.v1";
+let restT=null, restLeft=0, restTotal=0, restEndsAt=0;
+function saveRestState(){
+  try{ localStorage.setItem(REST_KEY, JSON.stringify({endsAt:restEndsAt, total:restTotal, ex:$("#restExName").textContent||""})); }catch(e){}
+}
+function clearRestState(){ try{ localStorage.removeItem(REST_KEY); }catch(e){} }
+function restTick(){
+  restLeft=Math.max(0,Math.round((restEndsAt-Date.now())/1000));
+  updateRest();
+  if(restLeft<=0) endRest();
+}
 function startRest(secs,exName){
   restTotal=secs||db.config.descansoSegundos||90;
-  restLeft=restTotal;
+  restEndsAt=Date.now()+restTotal*1000;
   $("#restExName").textContent=exName||"";
-  $("#restTotalLbl").textContent="de "+fmtSecs(restTotal);
   renderPresets();
-  $("#restOverlay").classList.add("show");
-  const ring=$("#ringFg");
-  ring.style.strokeDasharray=RING_C;
-  updateRest();
-  clearInterval(restT);
-  restT=setInterval(()=>{
-    restLeft--; updateRest();
-    if(restLeft<=0) endRest();
-  },1000);
+  const bar=$("#restBar"); bar.classList.remove("done"); bar.classList.add("show");
+  saveRestState();
+  clearInterval(restT); restTick(); restT=setInterval(restTick,250);
 }
 function renderPresets(){
   $("#restPresets").innerHTML=PRESETS.map(p=>
     `<button class="rpreset${p===restTotal?" on":""}" onclick="setRestTotal(${p})">${fmtSecs(p)}</button>`).join("");
 }
 function setRestTotal(p){
-  restTotal=p; restLeft=p;
-  $("#restTotalLbl").textContent="de "+fmtSecs(restTotal);
-  renderPresets(); updateRest();
+  restTotal=p; restEndsAt=Date.now()+p*1000;
+  $("#restBar").classList.remove("done");
+  renderPresets(); saveRestState(); restTick();
 }
 function updateRest(){
   $("#restTime").textContent=fmtSecs(Math.max(0,restLeft));
-  const frac=restTotal?Math.max(0,restLeft/restTotal):0;
-  $("#ringFg").style.strokeDashoffset=RING_C*(1-frac);
+  const frac=restTotal?Math.max(0,Math.min(1,restLeft/restTotal)):0;
+  const fill=$("#restFill"); if(fill)fill.style.width=(frac*100)+"%";
 }
 function endRest(){
-  clearInterval(restT); restT=null;
+  clearInterval(restT); restT=null; clearRestState();
   beep(); if(navigator.vibrate)navigator.vibrate([220,90,220]);
   $("#restTime").textContent="0:00";
-  setTimeout(hideRest,900);
+  const fill=$("#restFill"); if(fill)fill.style.width="0%";
+  $("#restBar").classList.add("done");
+  setTimeout(hideRest,1400);
 }
-function hideRest(){ clearInterval(restT); restT=null; $("#restOverlay").classList.remove("show"); }
+function hideRest(){
+  clearInterval(restT); restT=null; clearRestState();
+  const b=$("#restBar"); if(b){ b.classList.remove("show"); b.classList.remove("done"); }
+}
+function restoreRest(){
+  let R; try{ R=JSON.parse(localStorage.getItem(REST_KEY)||"null"); }catch(e){ return; }
+  if(!R||!R.endsAt){ return; }
+  if(Math.round((R.endsAt-Date.now())/1000)<=0){ clearRestState(); return; } // já acabou enquanto estava fora
+  restTotal=R.total||db.config.descansoSegundos||90;
+  restEndsAt=R.endsAt;
+  $("#restExName").textContent=R.ex||"";
+  renderPresets();
+  const bar=$("#restBar"); bar.classList.remove("done"); bar.classList.add("show");
+  clearInterval(restT); restTick(); restT=setInterval(restTick,250);
+}
 function beep(){
   try{
     const ctx=new (window.AudioContext||window.webkitAudioContext)();
@@ -677,8 +957,31 @@ function mainMenu(){
       <div>Nuvem (GitHub)<div class="mi-sub">${ghConfigured()?"conectado — sincroniza entre aparelhos":"guardar dados online, sincronizar"}</div></div></div>
     <div class="menu-item" onclick="closeSheet();exportBackup()"><span class="mi-ic">⬇️</span> Exportar backup (.json)</div>
     <div class="menu-item" onclick="closeSheet();importBackup()"><span class="mi-ic">⬆️</span> Importar backup</div>
+    ${getSnapshot()?`<div class="menu-item" onclick="closeSheet();desfazerSheet()"><span class="mi-ic">↩️</span>
+      <div>Desfazer última mudança grande<div class="mi-sub">${new Date(getSnapshot().ts).toLocaleString("pt-BR")} — ${esc(getSnapshot().motivo||"backup")}</div></div></div>`:""}
     ${inTreino?`<div class="menu-item" onclick="closeSheet();editarTreino('${current.id}')"><span class="mi-ic">✏️</span> Editar este treino</div>`:""}
-    <div class="menu-item danger" onclick="closeSheet();resetTudo()"><span class="mi-ic">🗑</span> Restaurar rotina padrão</div>`);
+    <div class="menu-item" onclick="closeSheet();resgateSheet()"><span class="mi-ic">🩹</span>
+      <div>Recuperar histórico<div class="mi-sub">traz de volta cargas que sumiram</div></div></div>
+    <div class="menu-item" onclick="closeSheet();buscarAtualizacao()"><span class="mi-ic">🔄</span>
+      <div>Buscar atualização agora<div class="mi-sub">baixa a versão mais nova do app</div></div></div>
+    <div class="menu-item danger" onclick="closeSheet();resetTudo()"><span class="mi-ic">🗑</span> Restaurar rotina padrão</div>
+    <div class="mi-sub" style="text-align:center;margin-top:14px;opacity:.55">versão ${APP_VER}</div>`);
+}
+/* Forca o app a pegar a versao mais nova. Com sinal, limpa o cache offline e recarrega;
+   sem sinal, so pede update do Service Worker (nao apaga o cache, senao o app fica sem
+   nada pra abrir na academia). */
+async function buscarAtualizacao(){
+  toast("Procurando atualização…");
+  try{
+    if("serviceWorker" in navigator){
+      const rs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(rs.map(r=>r.update().catch(()=>{})));
+    }
+    if(navigator.onLine && window.caches){
+      const ks=await caches.keys(); await Promise.all(ks.map(k=>caches.delete(k)));
+    }
+  }catch(e){}
+  setTimeout(()=>location.reload(), 800);
 }
 function chipsHtml(sel,id){
   return `<div class="chips" id="${id}">`+PRESETS.map(p=>
@@ -741,7 +1044,8 @@ function importBackup(){
         const obj=JSON.parse(r.result);
         if(!obj.treinos) throw 0;
         const keepGh=gh();
-        db=obj; if(!db.historico)db.historico={}; if(!db.config)db.config={descansoSegundos:90};
+        snapshot("importar backup");
+        db=migrate(obj);
         db.config.github=keepGh;
         save(); goHome(); toast("Backup importado ✓");
       }catch(e){ toast("Arquivo inválido"); }
@@ -752,12 +1056,102 @@ function importBackup(){
 }
 function resetTudo(){
   openSheet(`<h2>Restaurar rotina padrão?</h2>
-    <p>Isso apaga seus registros e volta à rotina inicial da planilha. Exporte um backup antes se quiser guardar.</p>
+    <p>Volta os treinos e exercícios à rotina original. <b>Seu histórico de cargas é mantido</b> — as progressões continuam lá.</p>
     <div class="ex-actions">
       <button class="btn btn-soft" onclick="closeSheet()">Cancelar</button>
-      <button class="btn btn-accent" style="background:var(--danger);box-shadow:none" onclick="doReset()">Apagar e restaurar</button></div>`);
+      <button class="btn btn-accent" onclick="doReset(false)">Restaurar rotina</button></div>
+    <div class="menu-item danger" style="margin-top:12px" onclick="doReset(true)"><span class="mi-ic">🗑</span>
+      <div>Apagar também o histórico<div class="mi-sub">zera tudo, inclusive as cargas registradas</div></div></div>`);
 }
-function doReset(){ const keep=gh(); db=seed(); db.config.github=keep; save(); closeSheet(); goHome(); toast("Rotina restaurada"); }
+function doReset(hard){
+  snapshot(hard?"apagar tudo":"restaurar rotina padrão");
+  const keep=gh(), hist=hard?{}:(db.historico||{});
+  db=seed(); db.config.github=keep; db.historico=hist;
+  save(); closeSheet(); goHome();
+  if(hard){ clearTimeout(cloudTimer); cloudTimer=null; cloudPush(true); }   /* apagar foi proposital: manda vazio mesmo */
+  toast(hard?"Tudo apagado":"Rotina restaurada — histórico mantido ✓");
+}
+function desfazerSheet(){
+  const b=getSnapshot(); if(!b){ toast("Nada pra desfazer"); return; }
+  openSheet(`<h2>Desfazer?</h2>
+    <p>Volta os dados para como estavam em <b>${new Date(b.ts).toLocaleString("pt-BR")}</b><br>(antes de: ${esc(b.motivo||"—")}).<br>
+    Esse backup guarda <b>${histCount(b.db)}</b> séries de histórico.</p>
+    <div class="ex-actions">
+      <button class="btn btn-soft" onclick="closeSheet()">Cancelar</button>
+      <button class="btn btn-accent" onclick="doDesfazer()">Restaurar backup</button></div>`);
+}
+function doDesfazer(){
+  const b=getSnapshot(); if(!b) return;
+  const keep=gh();
+  snapshot("desfazer");
+  db=migrate(b.db); db.config=db.config||{descansoSegundos:90}; db.config.github=keep;
+  save(); closeSheet(); goHome(); toast("Dados restaurados ✓");
+}
+
+/* ---------- Resgate de histórico ----------
+   Duas fontes independentes do banco principal:
+   1) caderninho local (chave própria, só o "Concluir treino" escreve nela);
+   2) versões antigas do dados.json na nuvem (cada salvamento vira um commit no GitHub).
+   Os dois JUNTAM com o que existe hoje — nunca substituem. */
+function resgateSheet(){
+  const n=histCount({historico:journalHist()});
+  openSheet(`<h2>Recuperar histórico 🩹</h2>
+    <p>Se as cargas antigas sumiram, tente nesta ordem. Nenhuma das opções apaga o que você tem agora — elas só <b>somam</b>.</p>
+    <div class="menu-item" onclick="closeSheet();resgatarCaderninho()"><span class="mi-ic">📒</span>
+      <div>Do próprio aparelho<div class="mi-sub">${n===1?"1 sessão guardada":n+" sessões guardadas"} à parte</div></div></div>
+    ${ghConfigured()?`<div class="menu-item" onclick="closeSheet();versoesNuvemSheet()"><span class="mi-ic">☁️</span>
+      <div>De uma versão anterior da nuvem<div class="mi-sub">lista os salvamentos por data</div></div></div>`:""}
+    ${getSnapshot()?`<div class="menu-item" onclick="closeSheet();desfazerSheet()"><span class="mi-ic">↩️</span>
+      <div>Desfazer última mudança grande<div class="mi-sub">${new Date(getSnapshot().ts).toLocaleString("pt-BR")}</div></div></div>`:""}
+    <div class="ex-actions"><button class="btn btn-soft" onclick="closeSheet()">Fechar</button></div>`);
+}
+function resgatarCaderninho(){
+  const antes=histCount(db);
+  snapshot("recuperar do aparelho");
+  db.historico=mergeHist(db.historico, journalHist());
+  const dif=histCount(db)-antes;
+  save(); if(current)renderTreino(); else renderHome();
+  toast(dif>0?("Recuperei "+(dif===1?"1 sessão":dif+" sessões")+" ✓"):"Nada de novo aqui");
+}
+async function versoesNuvemSheet(){
+  if(!ghConfigured()){ toast("Nuvem não configurada"); return; }
+  const g=gh();
+  openSheet(`<h2>Versões anteriores ☁️</h2><p>Carregando…</p>`);
+  try{
+    const url=`https://api.github.com/repos/${g.user}/${g.repo}/commits?path=${encodeURIComponent(g.path||"dados.json")}&per_page=25&t=${Date.now()}`;
+    const r=await fetch(url,{headers:ghHeaders(),cache:"no-store"});
+    if(!r.ok) throw 0;
+    const cs=await r.json();
+    if(!cs.length){ openSheet(`<h2>Versões anteriores ☁️</h2><p>Nenhuma versão encontrada.</p>
+      <div class="ex-actions"><button class="btn btn-soft" onclick="closeSheet()">Fechar</button></div>`); return; }
+    let h=`<h2>Versões anteriores ☁️</h2><p>Cada linha é um salvamento seu. Toque numa data de <b>antes do problema</b> — o histórico dela é somado ao que você tem hoje.</p>`;
+    cs.forEach(c=>{
+      const d=new Date((c.commit&&c.commit.committer&&c.commit.committer.date)||Date.now());
+      h+=`<div class="menu-item" onclick="closeSheet();restaurarVersao('${c.sha}')"><span class="mi-ic">🕐</span>
+        <div>${d.toLocaleString("pt-BR")}<div class="mi-sub">${String(c.sha).slice(0,7)}</div></div></div>`;
+    });
+    h+=`<div class="ex-actions"><button class="btn btn-soft" onclick="closeSheet()">Fechar</button></div>`;
+    openSheet(h);
+  }catch(e){
+    openSheet(`<h2>Versões anteriores ☁️</h2><p>Não consegui ler as versões. Precisa de internet e do token conectado.</p>
+      <div class="ex-actions"><button class="btn btn-soft" onclick="closeSheet()">Fechar</button></div>`);
+  }
+}
+async function restaurarVersao(sha){
+  toast("Buscando essa versão…");
+  try{
+    const r=await fetch(ghUrl()+"?ref="+sha,{headers:ghHeaders(),cache:"no-store"});
+    if(!r.ok) throw 0;
+    const j=await r.json();
+    const antigo=JSON.parse(b64decode(j.content));
+    const antes=histCount(db);
+    snapshot("restaurar versão da nuvem");
+    db.historico=mergeHist(db.historico, antigo&&antigo.historico);
+    const dif=histCount(db)-antes;
+    save(); if(current)renderTreino(); else renderHome();
+    toast(dif>0?("Recuperei "+(dif===1?"1 sessão":dif+" sessões")+" ✓"):"Essa versão não tinha nada novo");
+  }catch(e){ toast("Não consegui ler essa versão"); }
+}
 
 /* ---------- Nuvem (GitHub) ---------- */
 function gh(){ return (db.config&&db.config.github)||null; }
@@ -784,24 +1178,57 @@ async function cloudPull(silent){
     db.config.github.sha=j.sha;
     const remote=JSON.parse(b64decode(j.content));
     const rU=remote.updatedAt||0, lU=db.updatedAt||0;
-    if(rU>lU){
+
+    /* REGRA DE OURO: o histórico é sempre a UNIÃO dos dois lados.
+       Venha a rotina de onde vier, nenhuma sessão registrada some. */
+    const juntos=mergeHist(db.historico, remote.historico);
+    const nJ=histCount({historico:juntos});
+    const ganhouAqui=nJ>histCount(db);
+    const temMaisQueNuvem=nJ>histCount(remote);
+
+    if(rU>lU && !current){
+      snapshot("baixar da nuvem");
       remote.config=remote.config||{};
       remote.config.github=db.config.github;   // mantém credenciais deste aparelho
-      db=remote; persist();
-      if(current) goHome(); else renderHome();
-      if(!silent)toast("Baixado da nuvem ☁️↓");
-    }else if(lU>rU){
-      await cloudPush(); if(!silent)toast("Enviado pra nuvem ☁️↑");
+      const novo=migrate(remote);
+      novo.historico=juntos;                   // rotina da nuvem + histórico dos dois
+      db=novo;
+      if(temMaisQueNuvem) db.updatedAt=Date.now();
+      persist(); renderHome();
+      if(temMaisQueNuvem) await cloudPush(true);
+      if(!silent)toast("Sincronizado ☁️↓");
     }else{
-      if(!silent)toast("Já sincronizado ✓");
+      if(ganhouAqui){ db.historico=juntos; db.updatedAt=Date.now(); persist(); if(current)renderTreino(); else renderHome(); }
+      if(rU>lU && current){
+        if(!silent)toast("Treino em andamento — sincroniza ao concluir");
+      }else if(lU>rU || temMaisQueNuvem){
+        await cloudPush(); if(!silent)toast("Enviado pra nuvem ☁️↑");
+      }else if(!silent){
+        toast("Já sincronizado ✓");
+      }
     }
   }catch(e){ if(!silent)toast("Sem conexão com a nuvem"); }
 }
-async function cloudPush(){
+/* force=true pula a junção (usado quando o histórico JÁ foi juntado, ou num apagar-tudo proposital) */
+async function cloudPush(force){
   if(!ghConfigured()||cloudBusy) return;
   cloudBusy=true;
   try{
     const g=db.config.github;
+    /* TRAVA: antes de gravar, lê o que está na nuvem e junta o histórico.
+       Assim nenhum aparelho consegue apagar as cargas do outro por descuido. */
+    if(!force){
+      try{
+        const chk=await fetch(ghUrl()+"?t="+Date.now(),{headers:ghHeaders(),cache:"no-store"});
+        if(chk.ok){
+          const cj=await chk.json();
+          g.sha=cj.sha;
+          const rem=JSON.parse(b64decode(cj.content));
+          const m=mergeHist(db.historico, rem&&rem.historico);
+          if(histCount({historico:m})>histCount(db)){ db.historico=m; db.updatedAt=Date.now(); persist(); }
+        }else if(chk.status===404){ g.sha=null; }
+      }catch(e){}
+    }
     const payload=Object.assign({},db);
     payload.config=Object.assign({},db.config); payload.config.github=undefined; // nunca grava o token no arquivo
     const body={message:"treino "+new Date().toISOString(),content:b64encode(JSON.stringify(payload))};
@@ -911,12 +1338,13 @@ function doSalvarExercicio(exId){
     current.exercicios.push(ex);
     liveSession[ex.id]=Array.from({length:series},()=>({peso:"",reps:"",feito:false}));
   }
-  save(); closeSheet(); renderTreino();
+  save(); saveLive(); closeSheet(); renderTreino();
 }
 function excluirExercicio(exId){
   current.exercicios=current.exercicios.filter(e=>e.id!==exId);
+  db.removidos=db.removidos||[]; if(db.removidos.indexOf(exId)<0) db.removidos.push(exId);
   delete liveSession[exId];
-  save(); closeSheet(); renderTreino(); toast("Exercício excluído");
+  save(); saveLive(); closeSheet(); renderTreino(); toast("Exercício excluído");
 }
 
 /* ---------- Eventos ---------- */
@@ -926,15 +1354,47 @@ $("#finishBtn").onclick=finishTreino;
 $("#restNowBtn").onclick=()=>startRest(db.config.descansoSegundos,"");
 $("#restSkip").onclick=hideRest;
 $("#backdrop").onclick=closeSheet;
-document.querySelectorAll("#restOverlay [data-rest]").forEach(b=>{
-  b.onclick=()=>{ restLeft=Math.max(1,restLeft+parseInt(b.dataset.rest,10));
-    if(restLeft>restTotal){restTotal=restLeft; $("#restTotalLbl").textContent="de "+fmtSecs(restTotal); renderPresets();}
-    updateRest(); };
+document.querySelectorAll("#restBar [data-rest]").forEach(b=>{
+  b.onclick=()=>{
+    const d=parseInt(b.dataset.rest,10)*1000;
+    restEndsAt=Math.max(Date.now()+1000, restEndsAt+d);   // nunca deixa negativo
+    const left=Math.round((restEndsAt-Date.now())/1000);
+    if(left>restTotal){ restTotal=left; renderPresets(); }
+    $("#restBar").classList.remove("done");
+    saveRestState(); restTick();
+  };
 });
+// Ao voltar pro app (ou trocar de aba), recalcula na hora pelo relógio real
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && restT) restTick(); });
+
+/* Saindo do app (iOS pode matar a página a qualquer momento): garante a sessão
+   no disco e dispara a nuvem na hora, em vez de esperar o debounce de 1,5s. */
+function flushTudo(){
+  try{ if(current) saveLive(); }catch(e){}
+  try{ if(cloudTimer){ clearTimeout(cloudTimer); cloudTimer=null; cloudPush(); } }catch(e){}
+}
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) flushTudo(); });
+window.addEventListener("pagehide", flushTudo);
 
 /* ---------- Start ---------- */
-goHome();
+if(!restoreLive()) goHome();   // se havia treino no meio, reabre com tudo que já estava preenchido
+restoreRest();                 // se o descanso estava rodando, retoma contando pelo relógio real
 if(ghConfigured()) cloudPull(true);
+
+// Cache offline (sw.js = rede primeiro, cache como reserva). Quando um Service Worker
+// novo assume o controle, recarrega uma vez para a versao nova aparecer NA HORA —
+// menos no meio de um treino, pra nao atrapalhar quem esta registrando serie.
+if("serviceWorker" in navigator){
+  const tinhaSW=!!navigator.serviceWorker.controller;
+  let jaRecarregou=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+    if(!tinhaSW||jaRecarregou||current) return;
+    jaRecarregou=true; try{ flushTudo(); }catch(e){} location.reload();
+  });
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("./sw.js").then(r=>{ r.update().catch(()=>{}); }).catch(()=>{});
+  });
+}
 </script>
 </body>
 </html>

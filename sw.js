@@ -1,5 +1,5 @@
 /* Service Worker do app "Meus Treinos"
-   v2 (2026-09-13) — REDE PRIMEIRO, cache como rede de seguranca.
+   v2.1 (2026-09-16) — REDE PRIMEIRO, cache como rede de seguranca.
 
    Por que mudou: a versao anterior (stale-while-revalidate) respondia do cache na
    hora e baixava a versao nova "em 2o plano" — mas esse download nao estava dentro
