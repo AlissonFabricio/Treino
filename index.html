@@ -303,7 +303,7 @@ const KEY="treinoApp.v1";
 const uid=()=>Math.random().toString(36).slice(2,9);
 /* --- IDs estaveis por nome: o historico deixa de depender de id aleatorio --- */
 const SEED_VER=3;
-const APP_VER="3.3 · 16/09/2026";   /* aparece no menu ⚙️ — serve pra saber qual versao esta rodando no aparelho */
+const APP_VER="3.4 · 16/09/2026";   /* aparece no menu ⚙️ — serve pra saber qual versao esta rodando no aparelho */
 const BKKEY="treinoApp.backup.v1";
 const JRNKEY="treinoApp.journal.v1";   /* caderninho a parte: toda sessao concluida fica registrada aqui tambem */
 const slugify=s=>String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
@@ -812,16 +812,26 @@ function toggleDone(exId,si,el){
   saveLive();
   if(s.feito&&navigator.vibrate)navigator.vibrate(30); // só um toque de confirmação; descanso é manual (botão ⏱)
 }
+/* O número de séries que aparece ao abrir o treino vem de ex.series (a rotina).
+   Então + / − Série precisam gravar lá também — senão a mudança vale só pro dia
+   e na semana seguinte o exercício volta com a quantidade antiga. */
+function syncSeries(exId){
+  const ex=current&&current.exercicios.find(e=>e.id===exId);
+  const n=(liveSession[exId]||[]).length;
+  if(!ex||!n||ex.series===n) return;
+  ex.series=n; save();
+  toast(n===1?"Agora é 1 série — fica salvo":("Agora são "+n+" séries — fica salvo"));
+}
 function addSet(exId){
   const arr=liveSession[exId];
   const prev=arr[arr.length-1]||{peso:"",reps:""};
   arr.push({peso:prev.peso,reps:prev.reps,feito:false}); // nova série já com a mesma carga
-  saveLive(); renderTreino();
+  syncSeries(exId); saveLive(); renderTreino();
 }
 function removeSet(exId){
   const arr=liveSession[exId];
   if(arr.length<=1){ toast("Precisa de ao menos 1 série"); return; }
-  arr.pop(); saveLive(); renderTreino(); updateProgress();
+  arr.pop(); syncSeries(exId); saveLive(); renderTreino(); updateProgress();
 }
 
 /* ---------- Concluir ---------- */
@@ -1333,6 +1343,7 @@ function doSalvarExercicio(exId){
     ex.nome=nome; ex.series=series; ex.repsAlvo=reps; ex.obs=obs; ex.restSecs=restSecs;
     const cur=liveSession[exId];
     while(cur.length<series) cur.push({peso:"",reps:"",feito:false});
+    while(cur.length>series) cur.pop();   /* diminuir também vale na hora, não só no próximo treino */
   }else{
     const ex={id:uid(),nome,series,repsAlvo:reps,obs,pesoRef:"",restSecs};
     current.exercicios.push(ex);
